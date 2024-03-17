@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: ci
+  - package-ecosystem: pip
+    directory: "/.github/workflows"
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: ci
+  - package-ecosystem: pip
+    directory: "/docs"
+    schedule:
+      interval: daily
+     commit-message:
+      prefix: docs
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: deps
+ 
