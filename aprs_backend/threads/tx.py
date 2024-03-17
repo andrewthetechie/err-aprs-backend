@@ -1,17 +1,15 @@
-from aprs_backend.threads import ErrbotAPRSDThread
-from aprs_backend.utils.log import log
-import time
-
-from aprs_backend.clients import ErrbotAPRSISClient, ErrbotKISSClient
-from typing import Any
-from copy import deepcopy
-from rush import quota, throttle
-
-from aprsd.packets import core
 import queue
-from aprs_backend.packets.tracker import ErrbotPacketTrack
+import time
+from copy import deepcopy
+from typing import Any
 
+from aprs_backend.clients import ErrbotAPRSISClient
+from aprs_backend.clients import ErrbotKISSClient
+from aprs_backend.packets.tracker import ErrbotPacketTrack
+from aprs_backend.threads import ErrbotAPRSDThread
 from aprs_backend.threads import send_queue
+from aprs_backend.utils.log import log
+from aprsd.packets import core
 
 
 def send_via_queue(packet: core.Packet, block: bool = True, timeout: int = 90) -> None:
@@ -34,7 +32,7 @@ class ErrbotAPRSSender(ErrbotAPRSDThread):
         self.config = deepcopy(defaults)
         self._loop_cnt = 1
 
-    
+
     def loop(self):
         try:
             packet = self.send_queue.get(timeout=1)
@@ -54,7 +52,7 @@ class ErrbotAPRSSender(ErrbotAPRSDThread):
            self._send_ack(packet, direct=direct)
         else:
            self._send_packet(packet, direct=direct)
-    
+
     def _send_packet(self, packet: core.Packet, direct=False):
         if not direct:
             thread = SendPacketThread(packet=packet)

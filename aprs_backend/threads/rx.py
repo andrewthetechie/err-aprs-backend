@@ -1,11 +1,12 @@
-from aprs_backend.threads import ErrbotAPRSDThread
-from aprs_backend.packets.list import ErrbotPacketList
+import time
 from queue import Queue
+
+import aprslib
 from aprs_backend.clients import ErrbotAPRSISClient
 from aprs_backend.clients import ErrbotKISSClient
-import aprslib
+from aprs_backend.packets.list import ErrbotPacketList
+from aprs_backend.threads import ErrbotAPRSDThread
 from aprs_backend.utils.log import log
-import time
 from aprsd import packets
 
 
@@ -48,7 +49,6 @@ class ErrbotRXThread(ErrbotAPRSDThread):
             self._client.reset()
         # Continue to loop
         return True
-
 
     def process_packet(self, *args, **kwargs):
         """This handles the processing of an inbound packet.

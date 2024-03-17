@@ -1,25 +1,50 @@
-from aprslib.exceptions import LoginError
-from aprsd.client import APRSISClient
-from aprsd.clients.aprsis import Aprsdis
 import time
 
 from aprs_backend.utils.log import log
+from aprsd.client import APRSISClient
+from aprsd.clients.aprsis import Aprsdis
+from aprslib.exceptions import LoginError
 
 
 class ErrbotAPRSISClient(APRSISClient):
+    callsign : str = None
+    password: int = None
+    aprs_host: str = "rotate.aprs2.netZ"
+    aprs_port: int = 14580
 
     @staticmethod
     def is_configured():
         return True
 
-    def setup_connection(self, callsign: str, password: int, host: str = "rotate.aprs2.net", port: int = 14580):
+    def setup_connection(self,
+                         callsign: str | None = None,
+                         password: int | None = None,
+                         host: str | None = None,
+                         port: int  | None = None):
         connected = False
         backoff = 1
         aprs_client = None
+
+        # setup our config
+        if callsign is not None:
+            self.callsign = callsign
+        if password is not None:
+            self.password = password
+        if host is not None:
+            self.host = host
+        if port is not None:
+            self.port = port
+
+        # check for required config
+        for attr in ['callsign', 'password', 'aprs_host', 'aprs_port']:
+            if getattr(self, attr, None) is None:
+                log.error("Unable to connect client, missing %s", attr)
+                return
+
         while not connected:
             try:
                 log.info("Creating aprslib client")
-                aprs_client = Aprsdis(callsign, passwd=str(password), host=host, port=port)
+                aprs_client = Aprsdis(self.callsign, passwd=str(self.password), host=self.host, port=self.port)
                 # Force the log to be the same
                 aprs_client.logger = log
                 aprs_client.connect()

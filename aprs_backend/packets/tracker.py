@@ -1,11 +1,12 @@
-from aprs_backend.utils import ErrbotObjectStoreMixin
-import threading
 import datetime
+import queue
+import threading
+
 import wrapt
 from aprs_backend.threads import send_queue
-from aprsd.packets import core
-import queue
+from aprs_backend.utils import ErrbotObjectStoreMixin
 from aprs_backend.utils.log import log
+from aprsd.packets import core
 
 class ErrbotPacketTrack(ErrbotObjectStoreMixin):
     """Class to keep track of outstanding text messages.
@@ -85,8 +86,8 @@ class ErrbotPacketTrack(ErrbotObjectStoreMixin):
                     send_queue.put(pkt, block=True, timeout=30)
                 except queue.Full:
                     log.fatal(
-                        "Unable to send packet: %s during restart due to send queue full and timeout %d hit", 
-                        pkt, 
+                        "Unable to send packet: %s during restart due to send queue full and timeout %d hit",
+                        pkt,
                         30)
 
 
@@ -96,8 +97,8 @@ class ErrbotPacketTrack(ErrbotObjectStoreMixin):
             send_queue.put(packet, block=True, timeout=30)
         except queue.Full:
             log.fatal(
-                "Unable to send packet: %s during restart due to send queue full and timeout %d hit", 
-                packet, 
+                "Unable to send packet: %s during restart due to send queue full and timeout %d hit",
+                packet,
                 30)
 
     def restart_delayed(self, count=None, most_recent=True):

@@ -1,11 +1,28 @@
-from aprsd.utils.objectstore import ObjectStoreMixin as APRSDObjectStoreMixing
-import pickle
+import os
 import pathlib
+import pickle  # nosec
+from datetime import timedelta
 from functools import cached_property
 
-from copy import deepcopy
-import os
 from aprs_backend.utils.log import log
+from aprsd.utils.objectstore import ObjectStoreMixin as APRSDObjectStoreMixing
+# yeah, pickle isn't great.
+# TODO: move to using errbot's storage backend
+
+
+def strfdelta(tdelta: timedelta, fmt: str = "{hours:{width}}:{minutes:{width}}:{seconds:{width}}") -> str:
+    """Returns a string formatted timedelta"""
+    d = {
+        "days": tdelta.days,
+        "width": "02",
+    }
+    if tdelta.days > 0:
+        fmt = "{days} days " + fmt
+
+    d["hours"], rem = divmod(tdelta.seconds, 3600)
+    d["minutes"], d["seconds"] = divmod(rem, 60)
+    return fmt.format(**d)
+
 
 class ObjectStoreNotConfiguredError(Exception):
     pass
@@ -18,9 +35,9 @@ class ErrbotObjectStoreMixin(APRSDObjectStoreMixing):
         self._config = None
         self.configured = False
 
-    def configure(self, enable_save: bool = True, 
-                  save_location: str = "./", 
-                  aprs_packet_store_filename_prefix: str = "", 
+    def configure(self, enable_save: bool = True,
+                  save_location: str = "./",
+                  aprs_packet_store_filename_prefix: str = "",
                   aprs_packet_store_filename_suffix: str = "",
                   aprs_packet_store_file_extension: str = ".aprsb") -> None:
         self._config = {
@@ -33,12 +50,12 @@ class ErrbotObjectStoreMixin(APRSDObjectStoreMixing):
         if not self._config["aprs_packet_store_file_extension"].startswith("."):
             self._config["aprs_packet_store_file_extension"] = f".{self._config['aprs_packet_store_file_extension']}"
         self.configured = True
-        
+
 
     def _init_store(self):
         if not self.configured:
             raise ObjectStoreNotConfiguredError("Object store is not yet configured")
-        
+
         if not self._config['enable_save']:
             return
         save_location = self._config['save_location']
@@ -48,7 +65,7 @@ class ErrbotObjectStoreMixin(APRSDObjectStoreMixing):
                 os.makedirs(save_location)
             except Exception as ex:
                 self._config.exception(ex)
-    
+
     @cached_property
     def enable_save(self):
         return self._config['enable_save']
@@ -92,11 +109,15 @@ class ErrbotObjectStoreMixin(APRSDObjectStoreMixing):
         if os.path.exists(self.save_filename):
             try:
                 with open(self.save_filename, "rb") as fp:
-                    raw = pickle.load(fp)
+                    # TODO: Move to using errbot persistence
+                    raw = pickle.load(fp) # nosec
                     if raw:
                         self.data = raw
                         log.debug(
-                            "%s::Loaded %d entries from disk at %s", self.__class.__name__, len(self), self.save_filename
+                            "%s::Loaded %d entries from disk at %s",
+                            self.__class.__name__,
+                            len(self),
+                            self.save_filename
                         )
                     else:
                         log.debug(

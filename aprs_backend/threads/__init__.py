@@ -1,12 +1,11 @@
-from aprsd.threads.aprsd import APRSDThreadList
-
-from aprs_backend.utils.log import log
-import threading
-import wrapt
-from aprsd.threads import APRSDThread
 import datetime
-
+import threading
 from queue import Queue
+
+import wrapt
+from aprs_backend.utils.log import log
+from aprsd.threads import APRSDThread
+from aprsd.threads.aprsd import APRSDThreadList
 
 
 send_queue = Queue(maxsize=25)

@@ -29,6 +29,7 @@ pre-commit-hooks = "^4.2.0"
 pyupgrade = "^3.3.1"
 pytest-xdist = "^3.1.0"
 ruff = ">=0.0.249,<0.0.279"
+bandit = "^1.7.8"
 
 
 [build-system]
@@ -38,3 +39,8 @@ build-backend = "poetry.core.masonry.api"
 [tool.ruff]
 line-length = 120
 target-version = "py311"
+
+[tool.bandit]
+exclude_dirs = ["tests", "noxfile.py", ".github/scripts", "test_errbot", "dist"]
+
+[tool.bandit.assert_used]

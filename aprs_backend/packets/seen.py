@@ -1,9 +1,9 @@
-import threading
 import datetime
+import threading
 
-from aprs_backend.utils.log import log
-from aprs_backend.utils import ErrbotObjectStoreMixin
 import wrapt
+from aprs_backend.utils import ErrbotObjectStoreMixin
+from aprs_backend.utils.log import log
 
 
 class ErrbotPacketsSeenList(ErrbotObjectStoreMixin):

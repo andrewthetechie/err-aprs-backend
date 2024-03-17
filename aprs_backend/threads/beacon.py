@@ -1,22 +1,35 @@
-from aprs_backend.threads import ErrbotAPRSDThread
-from aprsd.packets import core
-from aprs.util.log import log
-from aprs_backend.threads.tx import send_via_queue
 import time
+
+from aprs_backend.threads import ErrbotAPRSDThread
+from aprs_backend.threads.tx import send_via_queue
+from aprs_backend.utils.log import log
+from aprsd.packets import core
+
+
+def check_beacon_config(config: object) -> dict:
+    kwargs = {
+        "beacon_comment": getattr(config, "APRS_BEACON_COMMENT", "Beacon from Errbot-APRS Backend"),
+        "beacon_interval_minutes": int(getattr(config, "APRS_BEACON_FREQUENCY_MINUTES", "90")),
+        "beacon_symbol": getattr(config, "APRS_BEACON_SYMBOL", "/")
+    }
+    for key in ["latitude", "longitude"]:
+        config_key = f"APRS_BEACON_{key}".upper()
+        if (value := getattr(config, config_key, None)) is None:
+            raise ValueError(f"{config_key} not found in config and required for Beacon.")
+        kwargs[key] = value
+    return kwargs
 
 class BeaconSendThread(ErrbotAPRSDThread):
     """Thread that sends a GPS beacon packet periodically.
-
-    Settings are in the [DEFAULT] section of the config file.
     """
     _loop_cnt: float = 1
 
-    def __init__(self, 
-                 latitude: str, 
-                 longitude: str, 
-                 callsign: str, 
-                 beacon_comment: str = "", 
-                 beacon_interval_minutes: int = 90, 
+    def __init__(self,
+                 latitude: str,
+                 longitude: str,
+                 callsign: str,
+                 beacon_comment: str = "",
+                 beacon_interval_minutes: int = 90,
                  beacon_symbol: str = "/"):
         super().__init__("BeaconSendThread")
         self._loop_cnt = 1

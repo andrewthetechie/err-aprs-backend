@@ -1,38 +1,31 @@
-from errbot.backends.base import (
-    ONLINE,
-    Message,
-)
-from errbot.core import ErrBot
-from aprsd.packets import core
-
-
-
+import os
 import sys
-
-
 from queue import Queue
 
-
-from aprs_backend.utils.log import log
-
 from aprs_backend.clients import ErrbotAPRSISClient
+from aprs_backend.packets.list import ErrbotPacketList
+from aprs_backend.packets.seen import ErrbotPacketsSeenList
+from aprs_backend.packets.tracker import ErrbotPacketTrack
+from aprs_backend.person import APRSPerson
+from aprs_backend.room import APRSRoom
+from aprs_backend.threads import ErrbotAPRSDThreadList
+from aprs_backend.threads import send_queue
+from aprs_backend.threads.beacon import BeaconSendThread
+from aprs_backend.threads.beacon import check_beacon_config
+from aprs_backend.threads.keep_alive import KeepAliveThread
+from aprs_backend.threads.processor import PacketProcessorThread
 from aprs_backend.threads.rx import ErrbotRXThread
 from aprs_backend.threads.tx import ErrbotAPRSSender
-
-
-from aprs_backend.room import APRSRoom
-from aprs_backend.person import APRSPerson
-from aprs_backend.packets.list import ErrbotPacketList
-from aprs_backend.packets.tracker import ErrbotPacketTrack
-from aprs_backend.packets.seen import ErrbotPacketsSeenList
-import os
-from aprs_backend.threads.processor import PacketProcessorThread
-
+from aprs_backend.utils.log import log
+from aprsd.packets import core
+from errbot.backends.base import Message
+from errbot.backends.base import ONLINE
+from errbot.core import ErrBot
 
 class APRSBackend(ErrBot):
     def __init__(self, config):
         log.debug("Initied")
-        
+
         aprs_config = {
             "host": "rotate.aprs.net",
             "port": 14580
@@ -86,17 +79,34 @@ class APRSBackend(ErrBot):
 
         self._rx_queue = Queue()
         self._aprs_client = ErrbotAPRSISClient()
-        self._aprs_client.setup_connection(self.callsign, 
-                                           aprs_config['password'], 
-                                           host=aprs_config['host'], 
+        self._aprs_client.setup_connection(self.callsign,
+                                           aprs_config['password'],
+                                           host=aprs_config['host'],
                                            port=aprs_config['port'])
         self.threads = {}
         self.threads['rx'] = ErrbotRXThread(packet_queue=self._rx_queue, client=self._aprs_client)
-        self.threads['sender'] = ErrbotAPRSSender(client=self._aprs_client, config=sender_config) 
+        self.threads['sender'] = ErrbotAPRSSender(client=self._aprs_client, config=sender_config)
         self.threads['processor'] = PacketProcessorThread(callsign=self.callsign,
                                                          packet_queue=self._rx_queue,
                                                          packet_tracker=self.packet_tracker,
                                                          backend_callback=self.callback_message)
+        self.threads['keep_alive'] = KeepAliveThread(packet_queue=self._rx_queue,
+                                                     send_queue=send_queue,
+                                                     aprs_client=self._aprs_client,
+                                                     packet_list=self.packet_list,
+                                                     packet_tracker=self.packet_tracker,
+                                                     seen_list=self.seen_list,
+                                                     thread_list=ErrbotAPRSDThreadList()
+                                                     )
+        if str(getattr(config, 'APRS_BEACON_ENABLED', False)).lower() in ["true", "t", "y", "yes", "1"]:
+            try:
+                beacon_kwargs = check_beacon_config(config)
+                self.treads['beacon'] = BeaconSendThread(
+                    **beacon_kwargs, callsign=self.callsign
+                )
+            except ValueError as exc:
+                log.error(exc)
+                log.error("Beaconing disabled due to config error")
         super().__init__(config)
 
     def build_reply(self, msg: Message, text: str, private: bool = False, threaded: bool = False) -> Message:
@@ -164,7 +174,7 @@ class APRSBackend(ErrBot):
 
     def change_presence(self, status: str = ONLINE, message: str = "") -> None:
         return None
- 
+
     def send_message(self, msg: Message) -> None:
         super().send_message(msg)
         packet = core.MessagePacket(
@@ -180,7 +190,7 @@ class APRSBackend(ErrBot):
     @property
     def mode(self) -> str:
         return "aprs"
-    
+
     def query_room(self, _: str) -> APRSRoom:
         """Room can either be a name or a channelid"""
         return APRSRoom("aprs")

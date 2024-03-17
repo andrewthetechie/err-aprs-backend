@@ -124,6 +124,30 @@ bitarray = ">2.5.0"
 importlib-metadata = ">=1.4"
 
 [[package]]
+name = "bandit"
+version = "1.7.8"
+description = "Security oriented static analyser for python code."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "bandit-1.7.8-py3-none-any.whl", hash = "sha256:509f7af645bc0cd8fd4587abc1a038fc795636671ee8204d502b933aee44f381"},
+    {file = "bandit-1.7.8.tar.gz", hash = "sha256:36de50f720856ab24a24dbaa5fee2c66050ed97c1477e0a1159deab1775eab6b"},
+]
+
+[package.dependencies]
+colorama = {version = ">=0.3.9", markers = "platform_system == \"Windows\""}
+PyYAML = ">=5.3.1"
+rich = "*"
+stevedore = ">=1.20.0"
+
+[package.extras]
+baseline = ["GitPython (>=3.1.30)"]
+sarif = ["jschema-to-python (>=1.2.3)", "sarif-om (>=1.0.4)"]
+test = ["beautifulsoup4 (>=4.8.0)", "coverage (>=4.5.4)", "fixtures (>=3.0.0)", "flake8 (>=4.0.0)", "pylint (==1.9.4)", "stestr (>=2.5.0)", "testscenarios (>=0.5.0)", "testtools (>=2.3.0)"]
+toml = ["tomli (>=1.1.0)"]
+yaml = ["PyYAML"]
+
+[[package]]
 name = "beautifulsoup4"
 version = "4.12.2"
 description = "Screen-scraping library"
@@ -2191,4 +2215,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "59ceb3bfae280b6a57c4097ebf2bbd8b0f37e1d6cd6204ef5bb24b3117505c81"
+content-hash = "acee2091cd57caf50f4d6a7770bbc38eebeeae3ffab8288e546e8d6d413c5858"

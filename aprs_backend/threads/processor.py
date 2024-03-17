@@ -1,13 +1,14 @@
-from aprs_backend.threads import ErrbotAPRSDThread
-from aprsd.packets import core
-from aprs_backend.threads.tx import send_via_queue
-from aprs_backend.message import APRSMessage
-from aprs_backend.person import APRSPerson
-import queue
-from aprsd import packets
-from aprs_backend.packets.tracker import ErrbotPacketTrack
-from typing import Callable
 import logging
+import queue
+from typing import Callable
+
+from aprs_backend.message import APRSMessage
+from aprs_backend.packets.tracker import ErrbotPacketTrack
+from aprs_backend.person import APRSPerson
+from aprs_backend.threads import ErrbotAPRSDThread
+from aprs_backend.threads.tx import send_via_queue
+from aprsd import packets
+from aprsd.packets import core
 
 log = logging.getLogger(__name__)
 
@@ -19,8 +20,8 @@ class PacketProcessorThread(ErrbotAPRSDThread):
     """
     _loop_cnt: float = 1
 
-    def __init__(self, 
-                 callsign: str, 
+    def __init__(self,
+                 callsign: str,
                  packet_queue: queue.Queue,
                  packet_tracker: ErrbotPacketTrack,
                  backend_callback: Callable):
@@ -41,7 +42,7 @@ class PacketProcessorThread(ErrbotAPRSDThread):
             pass
         self._loop_cnt += 1
         return True
-    
+
     def process_ack_packet(self, packet):
         """We got an ack for a message, no need to resend it."""
         ack_num = packet.msgNo
@@ -53,7 +54,7 @@ class PacketProcessorThread(ErrbotAPRSDThread):
         ack_num = packet.msgNo
         log.info("Got REJECT for message %s", ack_num)
         self.packet_tracker.remove(ack_num)
-    
+
     def process_packet(self, packet):
         """Process a packet received from aprs-is server."""
         log.debug("ProcessPKT-LOOP %d",self._loop_cnt)
@@ -66,7 +67,7 @@ class PacketProcessorThread(ErrbotAPRSDThread):
             to_call = packet.to_call
         msg_id = packet.msgNo
 
-        # We don't put ack or rejection packets destined for us 
+        # We don't put ack or rejection packets destined for us
         # through the plugins. These are purely message control
         # packets
         if (
@@ -119,7 +120,7 @@ class PacketProcessorThread(ErrbotAPRSDThread):
         except KeyError as exc:
             log.error("malformed packet, missing key %s", exc)
             return
-        
+
         msg = APRSMessage(
             body=text,
             extras = {
