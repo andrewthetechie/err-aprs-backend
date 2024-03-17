@@ -11,7 +11,9 @@ from aprsd import packets
 
 
 class ErrbotRXThread(ErrbotAPRSDThread):
-    def __init__(self, packet_queue: Queue, client: ErrbotAPRSISClient | ErrbotKISSClient):
+    def __init__(
+        self, packet_queue: Queue, client: ErrbotAPRSISClient | ErrbotKISSClient
+    ):
         super().__init__("RX_MSG")
         self.packet_queue = packet_queue
         self._client = client
@@ -34,7 +36,9 @@ class ErrbotRXThread(ErrbotAPRSDThread):
             # kwargs.  :(
             # https://github.com/rossengeorgiev/aprs-python/pull/56
             self._client.client.consumer(
-                self.process_packet, raw=False, blocking=False,
+                self.process_packet,
+                raw=False,
+                blocking=False,
             )
 
         except (
@@ -90,7 +94,9 @@ class ErrbotRXThread(ErrbotAPRSDThread):
             elif packet.timestamp - found.timestamp < 30:
                 # If the packet came in within 60 seconds of the
                 # Last time seeing the packet, then we drop it as a dupe.
-                log.warning(f"Packet {packet.from_call}:{packet.msgNo} already tracked, dropping.")
+                log.warning(
+                    f"Packet {packet.from_call}:{packet.msgNo} already tracked, dropping."
+                )
             else:
                 log.warning(
                     f"Packet {packet.from_call}:{packet.msgNo} already tracked "

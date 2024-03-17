@@ -1,11 +1,13 @@
 from errbot.backends.base import Person
 
+
 class APRSPerson(Person):
     """This class describes a Person on the APRS network
 
     Their callsign and SSID
 
     """
+
     def __init__(self, callsign: str):
         self._callsign = callsign
 

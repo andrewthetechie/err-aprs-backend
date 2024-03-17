@@ -8,6 +8,7 @@ from aprsd.packets.packet_list import PacketList
 
 class ErrbotPacketList(PacketList):
     """Singleton class that tracks packets"""
+
     _instance = None
     lock = threading.Lock()
     _total_rx: int = 0

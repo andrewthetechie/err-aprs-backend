@@ -18,13 +18,16 @@ class PacketProcessorThread(ErrbotAPRSDThread):
 
     Settings are in the [DEFAULT] section of the config file.
     """
+
     _loop_cnt: float = 1
 
-    def __init__(self,
-                 callsign: str,
-                 packet_queue: queue.Queue,
-                 packet_tracker: ErrbotPacketTrack,
-                 backend_callback: Callable):
+    def __init__(
+        self,
+        callsign: str,
+        packet_queue: queue.Queue,
+        packet_tracker: ErrbotPacketTrack,
+        backend_callback: Callable,
+    ):
         super().__init__("PacketProcessorThread")
         self.callsign = callsign
         self.packet_queue = packet_queue
@@ -32,10 +35,9 @@ class PacketProcessorThread(ErrbotAPRSDThread):
         self.backend_callback = backend_callback
         self._loop_cnt = 1
 
-
     def loop(self):
         try:
-            packet = self.packet_queue.get(timeout=.25)
+            packet = self.packet_queue.get(timeout=0.25)
             if packet:
                 self.process_packet(packet)
         except queue.Empty:
@@ -57,7 +59,7 @@ class PacketProcessorThread(ErrbotAPRSDThread):
 
     def process_packet(self, packet):
         """Process a packet received from aprs-is server."""
-        log.debug("ProcessPKT-LOOP %d",self._loop_cnt)
+        log.debug("ProcessPKT-LOOP %d", self._loop_cnt)
         our_call = self.callsign.lower()
 
         from_call = packet.from_call
@@ -100,7 +102,8 @@ class PacketProcessorThread(ErrbotAPRSDThread):
                     self.process_other_packet(packet, for_us=False)
             else:
                 self.process_other_packet(
-                    packet, for_us=(to_call.lower() == our_call),
+                    packet,
+                    for_us=(to_call.lower() == our_call),
                 )
         log.debug(f"Packet processing complete for pkt '{packet.key}'")
         return False
@@ -112,24 +115,24 @@ class PacketProcessorThread(ErrbotAPRSDThread):
         """
         log.debug(packet)
         try:
-            text = packet['message_text']
-            sender = packet['from']
-            msg_number = int(packet.get('msgNo', "0"))
-            path = packet['path']
-            via = packet['via']
+            text = packet["message_text"]
+            sender = packet["from"]
+            msg_number = int(packet.get("msgNo", "0"))
+            path = packet["path"]
+            via = packet["via"]
         except KeyError as exc:
             log.error("malformed packet, missing key %s", exc)
             return
 
         msg = APRSMessage(
             body=text,
-            extras = {
+            extras={
                 "msg_number": msg_number,
                 "via": via,
                 "path": path,
-                "raw": packet['raw'],
-                "packet": packet
-            }
+                "raw": packet["raw"],
+                "packet": packet,
+            },
         )
         msg.frm = APRSPerson(callsign=sender)
         msg.to = APRSPerson(self.callsign)

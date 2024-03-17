@@ -13,15 +13,8 @@ updates:
     commit-message:
       prefix: ci
   - package-ecosystem: pip
-    directory: "/docs"
-    schedule:
-      interval: daily
-     commit-message:
-      prefix: docs
-  - package-ecosystem: pip
     directory: "/"
     schedule:
       interval: daily
     commit-message:
       prefix: deps
- 

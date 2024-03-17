@@ -13,19 +13,20 @@ send_queue = Queue(maxsize=25)
 
 class ErrbotAPRSDThreadList(APRSDThreadList):
     """Singleton class that keeps track of APRS plugin wide threads."""
+
     _instance: "ErrbotAPRSDThreadList" = None
     threads_list: list = []
     lock: threading.Lock = threading.Lock()
 
     @wrapt.synchronized(lock)
-    def stop_all(self)-> None:
+    def stop_all(self) -> None:
         """Iterate over all threads and call stop on them."""
         for th in self.threads_list:
-            log.info("Stopping Thread %s",th.name)
+            log.info("Stopping Thread %s", th.name)
             if hasattr(th, "packet"):
-                log.info(
-                    "%s packet %s", th.name, th.packet)
+                log.info("%s packet %s", th.name, th.packet)
             th.stop()
+
 
 class ErrbotAPRSDThread(APRSDThread):
     def __init__(self, name):

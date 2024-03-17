@@ -1,4 +1,3 @@
-import os
 import sys
 from queue import Queue
 
@@ -15,55 +14,37 @@ from aprs_backend.threads.beacon import check_beacon_config
 from aprs_backend.threads.keep_alive import KeepAliveThread
 from aprs_backend.threads.processor import PacketProcessorThread
 from aprs_backend.threads.rx import ErrbotRXThread
+from aprs_backend.threads.tx import check_sender_config
 from aprs_backend.threads.tx import ErrbotAPRSSender
+from aprs_backend.utils import check_object_store_config
 from aprs_backend.utils.log import log
 from aprsd.packets import core
 from errbot.backends.base import Message
 from errbot.backends.base import ONLINE
 from errbot.core import ErrBot
 
+
 class APRSBackend(ErrBot):
     def __init__(self, config):
         log.debug("Initied")
 
-        aprs_config = {
-            "host": "rotate.aprs.net",
-            "port": 14580
-        }
+        aprs_config = {"host": "rotate.aprs.net", "port": 14580}
         aprs_config.update(config.BOT_IDENTITY)
 
-        sender_config = {}
-        if getattr(config, "APRS_MSG_RATE_LIMIT_PERIOD", None) is not None:
-            sender_config['msg_rate_limit_period'] = getattr(config, "APRS_MSG_RATE_LIMIT_PERIOD")
-        if getattr(config, "APRS_ACK_RATE_LIMIT_PERIOD", None) is not None:
-            sender_config['ack_rate_limit_period'] = getattr(config, 'APRS_ACK_RATE_LIMIT_PERIOD')
+        sender_config = check_sender_config(config)
 
-        if 'callsign' not in aprs_config:
+        if "callsign" not in aprs_config:
             log.fatal("No callsign in bot identity")
             sys.exit(1)
-        if 'password' not in aprs_config:
+        if "password" not in aprs_config:
             log.fatal("No password in bot identity")
             sys.exit(1)
 
-        self.callsign = aprs_config['callsign']
+        self.callsign = aprs_config["callsign"]
         self.bot_identifier = APRSPerson(self.callsign)
         self._multiline = False
 
-        packet_storage_kwargs = {}
-
-        for kwarg, config_key in {
-            "enable_save": "APRS_PACKET_STORE_ENABLE_SAVE",
-            "save_location": "APRS_PACKET_STORE_SAVE_LOCATION",
-            "aprs_packet_store_filename_prefix": "APRS_PACKET_STORE_FILENAME_PREFIX",
-            "aprs_packet_store_filename_suffix": "APRS_PACKET_STORE_FILENAME_SUFFIX",
-            "aprs_packet_store_file_extension": "APRS_PACKET_STORE_FILE_EXTENSION"
-        }.items():
-            if (config_val := getattr(config, config_key, None)) is not None:
-                packet_storage_kwargs[kwarg] = config_val
-        if 'save_location' not in packet_storage_kwargs:
-            packet_storage_kwargs['save_location'] = config.BOT_DATA_DIR + "/aprsb"
-        if not os.path.exists(packet_storage_kwargs['save_location']):
-            os.makedirs(packet_storage_kwargs['save_location'])
+        packet_storage_kwargs = check_object_store_config(config)
 
         self.packet_list = ErrbotPacketList()
         self.packet_tracker = ErrbotPacketTrack()
@@ -79,29 +60,44 @@ class APRSBackend(ErrBot):
 
         self._rx_queue = Queue()
         self._aprs_client = ErrbotAPRSISClient()
-        self._aprs_client.setup_connection(self.callsign,
-                                           aprs_config['password'],
-                                           host=aprs_config['host'],
-                                           port=aprs_config['port'])
+        self._aprs_client.setup_connection(
+            self.callsign,
+            aprs_config["password"],
+            host=aprs_config["host"],
+            port=aprs_config["port"],
+        )
         self.threads = {}
-        self.threads['rx'] = ErrbotRXThread(packet_queue=self._rx_queue, client=self._aprs_client)
-        self.threads['sender'] = ErrbotAPRSSender(client=self._aprs_client, config=sender_config)
-        self.threads['processor'] = PacketProcessorThread(callsign=self.callsign,
-                                                         packet_queue=self._rx_queue,
-                                                         packet_tracker=self.packet_tracker,
-                                                         backend_callback=self.callback_message)
-        self.threads['keep_alive'] = KeepAliveThread(packet_queue=self._rx_queue,
-                                                     send_queue=send_queue,
-                                                     aprs_client=self._aprs_client,
-                                                     packet_list=self.packet_list,
-                                                     packet_tracker=self.packet_tracker,
-                                                     seen_list=self.seen_list,
-                                                     thread_list=ErrbotAPRSDThreadList()
-                                                     )
-        if str(getattr(config, 'APRS_BEACON_ENABLED', False)).lower() in ["true", "t", "y", "yes", "1"]:
+        self.threads["rx"] = ErrbotRXThread(
+            packet_queue=self._rx_queue, client=self._aprs_client
+        )
+        self.threads["sender"] = ErrbotAPRSSender(
+            client=self._aprs_client, config=sender_config
+        )
+        self.threads["processor"] = PacketProcessorThread(
+            callsign=self.callsign,
+            packet_queue=self._rx_queue,
+            packet_tracker=self.packet_tracker,
+            backend_callback=self.callback_message,
+        )
+        self.threads["keep_alive"] = KeepAliveThread(
+            packet_queue=self._rx_queue,
+            send_queue=send_queue,
+            aprs_client=self._aprs_client,
+            packet_list=self.packet_list,
+            packet_tracker=self.packet_tracker,
+            seen_list=self.seen_list,
+            thread_list=ErrbotAPRSDThreadList(),
+        )
+        if str(getattr(config, "APRS_BEACON_ENABLED", False)).lower() in [
+            "true",
+            "t",
+            "y",
+            "yes",
+            "1",
+        ]:
             try:
                 beacon_kwargs = check_beacon_config(config)
-                self.treads['beacon'] = BeaconSendThread(
+                self.treads["beacon"] = BeaconSendThread(
                     **beacon_kwargs, callsign=self.callsign
                 )
             except ValueError as exc:
@@ -109,18 +105,20 @@ class APRSBackend(ErrBot):
                 log.error("Beaconing disabled due to config error")
         super().__init__(config)
 
-    def build_reply(self, msg: Message, text: str, private: bool = False, threaded: bool = False) -> Message:
+    def build_reply(
+        self, msg: Message, text: str, private: bool = False, threaded: bool = False
+    ) -> Message:
         msg = Message(
             body=text,
             to=msg.frm,
             frm=self.bot_identifier,
-            extras = {
-                "msg_number": msg.extras['msg_number'],
-                "via": msg.extras['via'],
-                "path": msg.extras['path'],
-                "raw": msg.extras['raw'],
-                "packet": msg.extras['packet']
-            }
+            extras={
+                "msg_number": msg.extras["msg_number"],
+                "via": msg.extras["via"],
+                "path": msg.extras["path"],
+                "raw": msg.extras["raw"],
+                "packet": msg.extras["packet"],
+            },
         )
         return msg
 
@@ -168,8 +166,7 @@ class APRSBackend(ErrBot):
             self.disconnect_callback()
 
     def build_identifier(self, txtrep: str) -> None:
-        """
-        """
+        """ """
         return None
 
     def change_presence(self, status: str = ONLINE, message: str = "") -> None:
@@ -181,11 +178,10 @@ class APRSBackend(ErrBot):
             from_call=self.callsign,
             to_call=msg.to.callsign,
             addresse=msg.to.callsign,
-            message_text=msg.body
+            message_text=msg.body,
         )
         packet._build_raw()
-        self.threads['sender'].send(packet)
-
+        self.threads["sender"].send(packet)
 
     @property
     def mode(self) -> str:

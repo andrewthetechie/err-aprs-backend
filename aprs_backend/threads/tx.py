@@ -16,11 +16,26 @@ def send_via_queue(packet: core.Packet, block: bool = True, timeout: int = 90) -
     try:
         send_queue.put(packet, block=block, timeout=timeout)
     except queue.Full:
-        log.fatal("Unable to send packet: %s due to send queue full and timeout %d hit", packet, timeout)
+        log.fatal(
+            "Unable to send packet: %s due to send queue full and timeout %d hit",
+            packet,
+            timeout,
+        )
+
+
+def check_sender_config(config: object) -> dict[str, Any]:
+    """Checks the errbot config object for the required config for an ErrbotAPRSSender"""
+    sender_config = {
+        "msg_rate_limit_period": int(getattr(config, "APRS_MSG_RATE_LIMIT_PERIOD", 2)),
+        "ack_rate_limit_period": int(getattr(config, "APRS_ACK_RATE_LIMIT_PERIOD", 1)),
+    }
+    return sender_config
 
 
 class ErrbotAPRSSender(ErrbotAPRSDThread):
-    def __init__(self, client: ErrbotAPRSISClient | ErrbotKISSClient, config: dict[str, Any] = {}) -> None:
+    def __init__(
+        self, client: ErrbotAPRSISClient | ErrbotKISSClient, config: dict[str, Any] = {}
+    ) -> None:
         super().__init__("errbot-aprs-sender")
         self.client = client
         defaults = {
@@ -31,7 +46,6 @@ class ErrbotAPRSSender(ErrbotAPRSDThread):
         defaults.update(config)
         self.config = deepcopy(defaults)
         self._loop_cnt = 1
-
 
     def loop(self):
         try:
@@ -49,9 +63,9 @@ class ErrbotAPRSSender(ErrbotAPRSDThread):
         # This constructs the packet.raw
         packet.prepare()
         if isinstance(packet, core.AckPacket):
-           self._send_ack(packet, direct=direct)
+            self._send_ack(packet, direct=direct)
         else:
-           self._send_packet(packet, direct=direct)
+            self._send_packet(packet, direct=direct)
 
     def _send_packet(self, packet: core.Packet, direct=False):
         if not direct:

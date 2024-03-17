@@ -8,6 +8,7 @@ from aprs_backend.utils.log import log
 
 class ErrbotPacketsSeenList(ErrbotObjectStoreMixin):
     """Global callsign seen list"""
+
     _instance = None
     lock = threading.Lock()
     data: dict = {}
