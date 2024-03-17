@@ -8,7 +8,6 @@ readme = "README.md"
 packages = [{include = "aprs_backend"}]
 include = ["*.plug"]
 
-
 [tool.poetry.dependencies]
 python = "^3.11"
 aprsd = "^3.0.0"
@@ -21,7 +20,6 @@ aprs = "aprs_backend:APRSBackend"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1.1"
 coverage = {extras = ["toml"], version = ">=6.5,<8.0"}
-safety = "^3.0.1"
 pre-commit = ">=2.12.1"
 pep8-naming = "^0.13.2"
 reorder-python-imports = "^3.9.0"
@@ -30,6 +28,7 @@ pyupgrade = "^3.3.1"
 pytest-xdist = "^3.1.0"
 ruff = ">=0.0.249,<0.3.4"
 bandit = "^1.7.8"
+pytest-subtests = "^0.12.1"
 
 
 [build-system]
@@ -43,4 +42,5 @@ target-version = "py311"
 [tool.bandit]
 exclude_dirs = ["tests", "noxfile.py", ".github/scripts", "test_errbot", "dist"]
 
-[tool.bandit.assert_used]
+[tool.errbot.backend_plugins]
+supported_errbot_version = ">=6.2.0"

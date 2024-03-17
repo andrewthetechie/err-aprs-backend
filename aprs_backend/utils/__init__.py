@@ -31,10 +31,10 @@ class ObjectStoreNotConfiguredError(Exception):
     pass
 
 
-def check_object_store_config(config: object) -> dict:
+def check_object_store_config(errbot_config: object) -> dict:
     """Checks the errbot config object and turns it into a config dict that can be
     passed as kwargs to an ErrbotObjectStoreMixin configure call"""
-    config = {}
+    store_config = {}
     for kwarg, config_key in {
         "enable_save": "APRS_PACKET_STORE_ENABLE_SAVE",
         "save_location": "APRS_PACKET_STORE_SAVE_LOCATION",
@@ -42,11 +42,11 @@ def check_object_store_config(config: object) -> dict:
         "aprs_packet_store_filename_suffix": "APRS_PACKET_STORE_FILENAME_SUFFIX",
         "aprs_packet_store_file_extension": "APRS_PACKET_STORE_FILE_EXTENSION",
     }.items():
-        if (config_val := getattr(config, config_key, None)) is not None:
-            config[kwarg] = config_val
-    if "save_location" not in config:
-        config["save_location"] = config.BOT_DATA_DIR + "/aprsb"
-    return config
+        if (config_val := getattr(errbot_config, config_key, None)) is not None:
+            store_config[kwarg] = config_val
+    if "save_location" not in store_config:
+        store_config["save_location"] = errbot_config.BOT_DATA_DIR + "/aprsb"
+    return store_config
 
 
 class ErrbotObjectStoreMixin(APRSDObjectStoreMixing):
