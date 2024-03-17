@@ -1,0 +1,6 @@
+[Core]
+Name = APRS
+Module = aprs
+
+[Documentation]
+Description = Backend for APRS
