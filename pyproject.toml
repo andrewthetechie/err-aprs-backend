@@ -29,6 +29,7 @@ pytest-xdist = "^3.1.0"
 ruff = ">=0.0.249,<0.3.4"
 bandit = "^1.7.8"
 pytest-subtests = "^0.12.1"
+pytest-cov = "^4.1.0"
 
 
 [build-system]
@@ -44,3 +45,8 @@ exclude_dirs = ["tests", "noxfile.py", ".github/scripts", "test_errbot", "dist"]
 
 [tool.errbot.backend_plugins]
 supported_errbot_version = ">=6.2.0"
+
+
+[tool.pytest.ini_options]
+norecursedirs = ".github ci .git .idea"
+addopts = "--cov=aprs_backend --cov-report xml:.coverage.xml --cov-report=term-missing"
