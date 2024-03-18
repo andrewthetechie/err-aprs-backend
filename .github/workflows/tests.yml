@@ -101,6 +101,10 @@ jobs:
         uses: actions/download-artifact@v3.0.0
         with:
           name: coverage-data
-
+          path: ./
+      - run: ls -R
       - name: Upload coverage report
         uses: codecov/codecov-action@v3.1.0
+        with:
+          files: .coverage.xml
+          verbose: true
