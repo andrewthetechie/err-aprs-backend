@@ -1,6 +1,6 @@
 import logging
 import queue
-from typing import Callable
+from collections.abc import Callable
 
 from aprs_backend.message import APRSMessage
 from aprs_backend.packets.tracker import ErrbotPacketTrack
