@@ -44,9 +44,9 @@ class KeepAliveThread(ErrbotAPRSDThread):
         if self._loop_counter % self._keep_alive_freq == 0:
             uptime = datetime.now() - self.started_time
             curr_mem, peak_mem = tracemalloc.get_traced_memory()
-            stats = f"Uptime {strfdelta(uptime)} RX: {self.packet_list.total_rx()} "
+            stats = f"Uptime {strfdelta(uptime)} RX: {self._packet_list.total_rx()} "
             stats += (
-                f"TX: {self.packet_list.total_tx()} Tracked: {len(self.packet_tracker)}"
+                f"TX: {self._packet_list.total_tx()} Tracked: {len(self._packet_tracker)}"
             )
             stats += (
                 f"Threads: {len(self._thread_list)} Mem: {curr_mem} PeakMem: {peak_mem}"
@@ -54,7 +54,7 @@ class KeepAliveThread(ErrbotAPRSDThread):
             log.info(stats)
             thread_out = []
             thread_info = {}
-            for thread in self.thread_list.threads_list:
+            for thread in self._thread_list.threads_list:
                 alive = thread.is_alive()
                 age = thread.loop_age()
                 key = thread.__class__.__name__
@@ -78,7 +78,7 @@ class KeepAliveThread(ErrbotAPRSDThread):
             else:
                 if (
                     self._packet_list.secs_since_last_rx > self._aprs_keep_alive_seconds
-                    and self._packet_list > self._aprs_keep_alive_seconds
+                    and self._packet_list
                 ):
                     log.error(
                         "No keepalive from aprs in %d seconds. Resetting connection",

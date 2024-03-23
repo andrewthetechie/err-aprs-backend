@@ -69,14 +69,14 @@ class ErrbotAPRSSender(ErrbotAPRSDThread):
 
     def _send_packet(self, packet: core.Packet, direct=False):
         if not direct:
-            thread = SendPacketThread(packet=packet)
+            thread = SendPacketThread(packet=packet, aprs_sender=self)
             thread.start()
         else:
             self._send_direct(packet)
 
     def _send_ack(self, packet: core.AckPacket, direct=False):
         if not direct:
-            thread = SendAckThread(packet=packet)
+            thread = SendAckThread(packet=packet, aprs_sender=self)
             thread.start()
         else:
             self._send_direct(packet)
@@ -200,7 +200,7 @@ class SendPacketThread(ErrbotAPRSDThread):
                 # no attempt time, so lets send it, and start
                 # tracking the time.
                 packet.last_send_time = int(round(time.time()))
-                self.aprs_sender.send(packet, direct=True)
+                self.sender.send(packet, direct=True)
                 packet.send_count += 1
 
             time.sleep(1)

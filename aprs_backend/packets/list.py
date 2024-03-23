@@ -52,7 +52,10 @@ class ErrbotPacketList(PacketList):
     @property
     def secs_since_last_rx(self) -> float:
         now = datetime.now()
-        return (now - self.get_last_rx()).total_seconds()
+        if self.get_last_rx() is not None:
+            return (now - self.get_last_rx()).total_seconds()
+        return 0.0
+
 
     @property
     def secs_since_last_tx(self) -> float:

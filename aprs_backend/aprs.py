@@ -28,10 +28,12 @@ class APRSBackend(ErrBot):
     def __init__(self, config):
         log.debug("Initied")
 
+        self._errbot_config = config
+
         aprs_config = {"host": "rotate.aprs.net", "port": 14580}
         aprs_config.update(config.BOT_IDENTITY)
 
-        sender_config = check_sender_config(config)
+        self._sender_config = check_sender_config(config)
 
         if "callsign" not in aprs_config:
             log.fatal("No callsign in bot identity")
@@ -67,11 +69,14 @@ class APRSBackend(ErrBot):
             port=aprs_config["port"],
         )
         self.threads = {}
+        super().__init__(config)
+
+    def setup_threads(self) -> None:
         self.threads["rx"] = ErrbotRXThread(
             packet_queue=self._rx_queue, client=self._aprs_client
         )
         self.threads["sender"] = ErrbotAPRSSender(
-            client=self._aprs_client, config=sender_config
+            client=self._aprs_client, config=self._sender_config
         )
         self.threads["processor"] = PacketProcessorThread(
             callsign=self.callsign,
@@ -88,7 +93,7 @@ class APRSBackend(ErrBot):
             seen_list=self.seen_list,
             thread_list=ErrbotAPRSDThreadList(),
         )
-        if str(getattr(config, "APRS_BEACON_ENABLED", False)).lower() in [
+        if str(getattr(self._errbot_config, "APRS_BEACON_ENABLED", False)).lower() in [
             "true",
             "t",
             "y",
@@ -96,14 +101,13 @@ class APRSBackend(ErrBot):
             "1",
         ]:
             try:
-                beacon_kwargs = check_beacon_config(config)
+                beacon_kwargs = check_beacon_config(self._errbot_config)
                 self.treads["beacon"] = BeaconSendThread(
                     **beacon_kwargs, callsign=self.callsign
                 )
             except ValueError as exc:
                 log.error(exc)
                 log.error("Beaconing disabled due to config error")
-        super().__init__(config)
 
     def build_reply(
         self, msg: Message, text: str, private: bool = False, threaded: bool = False
@@ -148,6 +152,7 @@ class APRSBackend(ErrBot):
         log.debug("APRS backend started")
         self.connect_callback()
         try:
+            self.setup_threads()
             for key, thread in self.threads.items():
                 log.debug("Starting %s thread", key)
                 thread.start()

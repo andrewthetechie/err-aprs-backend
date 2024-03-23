@@ -108,19 +108,19 @@ class PacketProcessorThread(ErrbotAPRSDThread):
         log.debug(f"Packet processing complete for pkt '{packet.key}'")
         return False
 
-    def process_our_message_packet(self, packet: core.Packet):
+    def process_our_message_packet(self, packet: core.MessagePacket):
         """Process a MessagePacket destined for us.
         Convert to an APRSMessage and call the backend_callback to send
         the message through errbot plugins
         """
         log.debug(packet)
         try:
-            text = packet["message_text"]
-            sender = packet["from"]
-            msg_number = int(packet.get("msgNo", "0"))
-            path = packet["path"]
-            via = packet["via"]
-        except KeyError as exc:
+            text = packet.message_text
+            sender = packet.from_call
+            msg_number = packet.msgNo
+            path = packet.path
+            via = packet.via
+        except AttributeError as exc:
             log.error("malformed packet, missing key %s", exc)
             return
 
@@ -130,7 +130,7 @@ class PacketProcessorThread(ErrbotAPRSDThread):
                 "msg_number": msg_number,
                 "via": via,
                 "path": path,
-                "raw": packet["raw"],
+                "raw": packet.raw,
                 "packet": packet,
             },
         )
