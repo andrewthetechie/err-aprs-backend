@@ -1,10 +1,13 @@
 import time
 
-from aprs_backend.utils.log import log
 from aprsd.client import APRSISClient
 from aprsd.clients.aprsis import Aprsdis
 from aprslib.exceptions import LoginError
 
+import logging
+
+
+log = logging.getLogger(__name__)
 
 class ErrbotAPRSISClient(APRSISClient):
     callsign: str = None

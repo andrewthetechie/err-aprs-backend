@@ -17,11 +17,21 @@ from aprs_backend.threads.rx import ErrbotRXThread
 from aprs_backend.threads.tx import check_sender_config
 from aprs_backend.threads.tx import ErrbotAPRSSender
 from aprs_backend.utils import check_object_store_config
-from aprs_backend.utils.log import log
 from aprsd.packets import core
 from errbot.backends.base import Message
 from errbot.backends.base import ONLINE
 from errbot.core import ErrBot
+
+import logging
+
+
+log = logging.getLogger(__name__)
+for handler in log.handlers:
+    handler.setFormatter(logging.Formatter('%(filename)s: '
+                                '%(levelname)s: '
+                                '%(funcName)s(): '
+                                '%(lineno)d:\t'
+                                '%(message)s'))
 
 
 class APRSBackend(ErrBot):
@@ -112,7 +122,8 @@ class APRSBackend(ErrBot):
     def build_reply(
         self, msg: Message, text: str, private: bool = False, threaded: bool = False
     ) -> Message:
-        msg = Message(
+        log.debug(msg)
+        reply = Message(
             body=text,
             to=msg.frm,
             frm=self.bot_identifier,
@@ -124,9 +135,10 @@ class APRSBackend(ErrBot):
                 "packet": msg.extras["packet"],
             },
         )
-        return msg
+        log.debug(reply)
+        return reply
 
-    def set_message_size_limit(self, limit=67, hard_limit=67):
+    def set_message_size_limit(self, limit=64, hard_limit=67):
         """
         APRS supports upto 67 characters per message
         http://www.aprs.org/txt/messages.txt
@@ -179,6 +191,7 @@ class APRSBackend(ErrBot):
 
     def send_message(self, msg: Message) -> None:
         super().send_message(msg)
+        log.debug("Sending %s", msg)
         packet = core.MessagePacket(
             from_call=self.callsign,
             to_call=msg.to.callsign,

@@ -8,9 +8,12 @@ from aprs_backend.clients import ErrbotKISSClient
 from aprs_backend.packets.tracker import ErrbotPacketTrack
 from aprs_backend.threads import ErrbotAPRSDThread
 from aprs_backend.threads import send_queue
-from aprs_backend.utils.log import log
 from aprsd.packets import core
 
+import logging
+
+
+log = logging.getLogger(__name__)
 
 def send_via_queue(packet: core.Packet, block: bool = True, timeout: int = 90) -> None:
     try:

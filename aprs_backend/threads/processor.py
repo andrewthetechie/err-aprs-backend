@@ -68,6 +68,7 @@ class PacketProcessorThread(ErrbotAPRSDThread):
         else:
             to_call = packet.to_call
         msg_id = packet.msgNo
+        log.debug(msg_id)
 
         # We don't put ack or rejection packets destined for us
         # through the plugins. These are purely message control

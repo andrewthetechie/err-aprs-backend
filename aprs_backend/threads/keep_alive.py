@@ -11,8 +11,10 @@ from aprs_backend.packets import ErrbotPacketTrack
 from aprs_backend.threads import ErrbotAPRSDThread
 from aprs_backend.threads import ErrbotAPRSDThreadList
 from aprs_backend.utils import strfdelta
-from aprs_backend.utils.log import log
+import logging
 
+
+log = logging.getLogger(__name__)
 
 class KeepAliveThread(ErrbotAPRSDThread):
     def __init__(

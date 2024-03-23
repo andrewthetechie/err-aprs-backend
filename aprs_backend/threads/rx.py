@@ -6,9 +6,11 @@ from aprs_backend.clients import ErrbotAPRSISClient
 from aprs_backend.clients import ErrbotKISSClient
 from aprs_backend.packets.list import ErrbotPacketList
 from aprs_backend.threads import ErrbotAPRSDThread
-from aprs_backend.utils.log import log
 from aprsd import packets
+import logging
 
+
+log = logging.getLogger(__name__)
 
 class ErrbotRXThread(ErrbotAPRSDThread):
     def __init__(

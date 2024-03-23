@@ -3,10 +3,12 @@ import threading
 from queue import Queue
 
 import wrapt
-from aprs_backend.utils.log import log
 from aprsd.threads import APRSDThread
 from aprsd.threads.aprsd import APRSDThreadList
+import logging
 
+
+log = logging.getLogger(__name__)
 
 send_queue = Queue(maxsize=25)
 

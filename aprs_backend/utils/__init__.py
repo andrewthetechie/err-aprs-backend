@@ -4,12 +4,15 @@ import pickle  # nosec
 from datetime import timedelta
 from functools import cached_property
 
-from aprs_backend.utils.log import log
 from aprsd.utils.objectstore import ObjectStoreMixin as APRSDObjectStoreMixing
 
 # yeah, pickle isn't great.
 # TODO: move to using errbot's storage backend
 
+import logging
+
+
+log = logging.getLogger(__name__)
 
 def strfdelta(
     tdelta: timedelta, fmt: str = "{hours:{width}}:{minutes:{width}}:{seconds:{width}}"
@@ -65,6 +68,7 @@ class ErrbotObjectStoreMixin(APRSDObjectStoreMixing):
         aprs_packet_store_filename_suffix: str = "",
         aprs_packet_store_file_extension: str = ".aprsb",
     ) -> None:
+        log.debug("Name: %s-configure called", self.__class__.__qualname__)
         self._config = {
             "enable_save": enable_save,
             "save_location": save_location,
@@ -79,11 +83,9 @@ class ErrbotObjectStoreMixin(APRSDObjectStoreMixing):
         if not os.path.exists(self._config["save_location"]):
             os.makedirs(self._config["save_location"])
         self.configured = True
+        log.debug("Name: %s-configure end of, Configured: %s", self.__class__.__qualname__, self.configured)
 
     def _init_store(self):
-        if not self.configured:
-            raise ObjectStoreNotConfiguredError("Object store is not yet configured")
-
         if not self._config["enable_save"]:
             return
         save_location = self._config["save_location"]
@@ -118,6 +120,7 @@ class ErrbotObjectStoreMixin(APRSDObjectStoreMixing):
     def save(self):
         """Save any queued to disk?"""
         if not self.configured:
+            log.debug("Name: %s-load Configured: %s COnfig: %s", self.__class__.__qualname__, self.configured, self._config)
             raise ObjectStoreNotConfiguredError("Object store is not yet configured")
         if not self.enable_save:
             return
@@ -140,6 +143,7 @@ class ErrbotObjectStoreMixin(APRSDObjectStoreMixing):
 
     def load(self):
         if not self.configured:
+            log.debug("Name: %s-load Configured: %s COnfig: %s", self.__class__.__qualname__, self.configured, self._config)
             raise ObjectStoreNotConfiguredError("Object store is not yet configured")
         if not self.enable_save:
             return
@@ -168,6 +172,7 @@ class ErrbotObjectStoreMixin(APRSDObjectStoreMixing):
     def flush(self):
         """Nuke the old pickle file that stored the old results from last aprsd run."""
         if not self.configured:
+            log.debug("Name: %s-flush Configured: %s COnfig: %s", self.__class__.__qualname__, self.configured, self._config)
             raise ObjectStoreNotConfiguredError("Object store is not yet configured")
         if not self.enable_save:
             return

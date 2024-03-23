@@ -2,9 +2,12 @@ import time
 
 from aprs_backend.threads import ErrbotAPRSDThread
 from aprs_backend.threads.tx import send_via_queue
-from aprs_backend.utils.log import log
 from aprsd.packets import core
 
+import logging
+
+
+log = logging.getLogger(__name__)
 
 def check_beacon_config(config: object) -> dict:
     kwargs = {

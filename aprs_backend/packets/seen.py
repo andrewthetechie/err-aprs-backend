@@ -3,8 +3,10 @@ import threading
 
 import wrapt
 from aprs_backend.utils import ErrbotObjectStoreMixin
-from aprs_backend.utils.log import log
+import logging
 
+
+log = logging.getLogger(__name__)
 
 class ErrbotPacketsSeenList(ErrbotObjectStoreMixin):
     """Global callsign seen list"""
