@@ -10,7 +10,7 @@ include = ["*.plug"]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-aprsd = "^3.0.0"
+aprsd = "^3.3.3"
 
 [tool.poetry.plugins]
 
