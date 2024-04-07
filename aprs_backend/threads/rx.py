@@ -7,6 +7,7 @@ from aprs_backend.clients import ErrbotKISSClient
 from aprs_backend.packets.list import ErrbotPacketList
 from aprs_backend.threads import ErrbotAPRSDThread
 from aprsd import packets
+from aprs_backend.packets.ackrej import parse_ack_rej_msg_id, parse_new_ackrej_format
 import logging
 
 
@@ -69,9 +70,87 @@ class ErrbotRXThread(ErrbotAPRSDThread):
         """
         packet = self._client.decode_packet(*args, **kwargs)
         packet.log(header="RX")
-        print(packet)
-        if isinstance(packet, packets.AckPacket):
-            # We don't need to drop AckPackets, those should be
+        log.debug(packet)
+
+        # Check if this packet is in the new ack-rej format
+        # arpslib cannot handle these messages properly so we have to apply a workaround
+        # as we don't resubmit data in case it hasn't been received
+        response = None
+        if isinstance(packet, packets.MessagePacket):
+            if packet.message_text is not None and packet.message_text != "":
+                packet.message_text, response = parse_ack_rej_msg_id(packet.message_text)
+
+
+        # This is a special handler for the new(er) APRS ack/rej/format
+        # By default (and described in aprs101.pdf pg. 71), APRS supports two
+        # messages:
+        # - messages withOUT message ID, e.g. Hello World
+        # - message WITH 5-character message ID, e.g. Hello World{12345
+        # The latter require the program to send a seperate ACK to the original
+        # recipient
+        #
+        # Introduced through an addendum (http://www.aprs.org/aprs11/replyacks.txt),
+        # a third option came into place. This message also has a message ID but
+        # instead of sending a separate ACK, the original message ID is returned to
+        # the user for all messages that relate to the original one. aprslib does
+        # currently not recognise these new message IDs - therefore, we need to
+        # extract them from the message text and switch the program logic if we
+        # discover that new ID.
+        is_new_ackrej = False
+        if packet.msgNo is None and packet.message_text is not None:
+            packet.message_text, packet.msgNo, is_new_ackrej = parse_new_ackrej_format(packet.message_text)
+
+        log.debug("Message %s is_new_ackrej %s", packet, is_new_ackrej)
+
+        if response == "ack":
+            log.debug("Packet is new style ack, transforming")
+            new_packet = packets.AckPacket(
+                from_call = packet.from_call,
+                to_call = packet.to_call,
+                addresse = packet.addresse,
+                format = packet.format,
+                msgNo = packet.msgNo,
+                packet_type = packet.packet_type,
+                timestamp = packet.timestamp,
+                raw = packet.raw,
+                raw_dict = packet.raw_dict,
+                payload = packet.payload,
+                send_count = packet.send_count,
+                retry_count = packet.retry_count,
+                last_send_time = packet.last_send_time,
+                last_send_attempt = packet.last_send_attempt,
+                allow_delay = packet.allow_delay,
+                path = packet.path,
+                via = packet.va,
+                response = response
+            )
+            packet = new_packet
+        if response == "rej":
+            log.debug("Packet is new style rejection, transforming")
+            new_packet = packets.RejectPacket(
+                from_call = packet.from_call,
+                to_call = packet.to_call,
+                addresse = packet.addresse,
+                format = packet.format,
+                msgNo = packet.msgNo,
+                packet_type = packet.packet_type,
+                timestamp = packet.timestamp,
+                raw = packet.raw,
+                raw_dict = packet.raw_dict,
+                payload = packet.payload,
+                send_count = packet.send_count,
+                retry_count = packet.retry_count,
+                last_send_time = packet.last_send_time,
+                last_send_attempt = packet.last_send_attempt,
+                allow_delay = packet.allow_delay,
+                path = packet.path,
+                via = packet.va,
+                response = response
+            )
+            packet = new_packet
+
+        if isinstance(packet, packets.AckPacket) or isinstance(packet, packets.RejectPacket):
+            # We don't need to drop AckPackets of Rejects, those should be
             # processed.
             self.packet_queue.put(packet)
         else:
