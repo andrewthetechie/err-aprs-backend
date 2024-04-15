@@ -20,14 +20,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Upgrade pip
+      - name: Install pip and poetry
         run: |
-          pip install --constraint=package-requirements.txt pip
+          pip install --upgrade --constraint .github/workflows/constraints.txt pip poetry
           pip --version
-
-      - name: Install Poetry
-        run: |
-          pip install --constraint=package-requirements.txt poetry
           poetry --version
 
       - name: Build package
