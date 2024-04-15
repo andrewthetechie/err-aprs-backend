@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/andrewthetechie/err-aprs-backend/compare/v0.1.0...v0.1.1) (2024-04-15)
+
+
+### Bug Fixes
+
+* remove aprsd from KissClient ([#38](https://github.com/andrewthetechie/err-aprs-backend/issues/38)) ([c69f474](https://github.com/andrewthetechie/err-aprs-backend/commit/c69f47464c29f25f91ae84790f3c56aca138911b))
+
 ## 0.1.0 (2024-04-15)
 
 
