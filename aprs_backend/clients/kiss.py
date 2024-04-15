@@ -1,7 +1,4 @@
-from aprsd.client import KISSClient
-
-
-class KISSClient(KISSClient):
+class KISSClient:
     @staticmethod
     def is_configured():
         return False
