@@ -8,6 +8,9 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/err-aprs-backend
     permissions:
       id-token: write
     steps:
@@ -19,16 +22,13 @@ jobs:
         uses: actions/setup-python@v4.5.0
         with:
           python-version: "3.11"
-
       - name: Install pip and poetry
         run: |
           pip install --upgrade --constraint .github/workflows/constraints.txt pip poetry
           pip --version
           poetry --version
-
       - name: Build package
         run: |
           poetry build
-
-      - name: Publish package on PyPI
-        uses: pypa/gh-action-pypi-publish@v1.8.3
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
