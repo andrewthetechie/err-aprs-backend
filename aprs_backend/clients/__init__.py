@@ -1,4 +1,4 @@
-from .aprsis import ErrbotAPRSISClient
-from .kiss import ErrbotKISSClient
+from .aprsis import APRSISClient
+from .kiss import KISSClient
 
-__all__ = ["ErrbotAPRSISClient", "ErrbotKISSClient"]
+__all__ = ["APRSISClient", "KISSClient"]
