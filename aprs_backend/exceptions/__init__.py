@@ -1,0 +1,2 @@
+class APRSBackendException(Exception):
+    pass

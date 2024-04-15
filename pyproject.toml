@@ -10,7 +10,11 @@ include = ["*.plug"]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-aprsd = "^3.3.3"
+aprslib = "^0.7.2"
+expiringdict = "^1.2.2"
+dataclasses-json = "^0.6.4"
+better-profanity = "^0.7.0"
+
 
 [tool.poetry.plugins]
 
