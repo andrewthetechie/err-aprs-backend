@@ -268,13 +268,20 @@ class APRSBackend(ErrBot):
             msg_text = msg_text.strip("\n").strip("\r").strip("\t")
         if self._language_filter:
             msg_text = profanity.censor(msg_text)
+        msgNo = None
+        last_send_attempt = 0
+        if "packet" in msg.extras:
+            msgNo = getattr(msg.extras["packet"], "msgNo", None)
+            last_send_attempt = getattr(msg.extras["packet"], "last_send_attempt", 0)
+        if msgNo is None:
+            msgNo = self._message_counter.get_value_sync()
         msg_packet = MessagePacket(
             from_call=self.from_call,
             to_call=msg.to.callsign,
             addresse=msg.to.callsign,
             message_text=msg_text,
-            msgNo=msg.extras["packet"].msgNo,
-            last_send_attempt=msg.extras["packet"].last_send_attempt
+            msgNo=msgNo,
+            last_send_attempt=last_send_attempt
         )
         msg_packet._build_raw()
         try:

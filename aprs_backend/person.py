@@ -38,3 +38,14 @@ class APRSPerson(Person):
     @property
     def callsign(self) -> str:
         return self._callsign
+
+    def __eq__(self, other: any) -> bool:
+        if isinstance(other, APRSPerson):
+            return self._callsign.lower() == other._callsign.lower()
+        return False
+
+    def __hash__(self):
+        return hash(self._callsign)
+
+    def __str__(self):
+        return self._callsign
