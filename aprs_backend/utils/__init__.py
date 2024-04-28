@@ -6,9 +6,8 @@ import logging
 
 log = logging.getLogger(__name__)
 
-def strfdelta(
-    tdelta: timedelta, fmt: str = "{hours:{width}}:{minutes:{width}}:{seconds:{width}}"
-) -> str:
+
+def strfdelta(tdelta: timedelta, fmt: str = "{hours:{width}}:{minutes:{width}}:{seconds:{width}}") -> str:
     """Returns a string formatted timedelta"""
     d = {
         "days": tdelta.days,
