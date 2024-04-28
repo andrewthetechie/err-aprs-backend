@@ -69,6 +69,8 @@ BOT_IDENTITY = {
 }
 ```
 
+See [CONFIG.md](CONFIG.md) for more configuration options
+
 ### Disable the default plugins
 
 The default plugins allow configuring the bot, installing plugins, and returing detailed help information. These don't work well over APRS because
@@ -92,7 +94,7 @@ SUPPRESS_CMD_NOT_FOUND = True
 
 ### Bot Prefix
 You can leave your bot prefix on, but that's just extra characters. I prefer to make it optional so users don't have to
-send it on every commadn
+send it on every command
 
 ```python
 BOT_PREFIX_OPTIONAL_ON_CHAT = True
