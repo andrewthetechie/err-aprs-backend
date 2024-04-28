@@ -42,7 +42,6 @@ class APRSBackend(ErrBot):
         log.debug("Initied")
 
         self._errbot_config = config
-
         aprs_config = {"host": "rotate.aprs.net", "port": 14580}
         aprs_config.update(config.BOT_IDENTITY)
 
@@ -138,13 +137,6 @@ class APRSBackend(ErrBot):
         http://www.aprs.org/txt/messages.txt
         """
         super().set_message_size_limit(limit, hard_limit)
-
-    def shutdown(self):
-        super().shutdown()
-
-    def callback_message(self, msg: Message) -> None:
-        log.debug("Recieved msg %s", msg)
-        super().callback_message(msg)
 
     def warn_admins(self, warning: str) -> None:
         """
