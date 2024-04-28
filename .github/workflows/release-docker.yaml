@@ -29,7 +29,6 @@ jobs:
         id: meta
         with:
           images: |
-            ${{ github.repository }}
             ghcr.io/${{ github.repository }}
           tags: |
             type=raw,value=${{ github.ref_name }}
