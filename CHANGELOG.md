@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.2.0](https://github.com/andrewthetechie/err-aprs-backend/compare/v0.1.1...v0.2.0) (2024-04-28)
+
+
+### Features
+
+* add support for APRS Service Registry ([#57](https://github.com/andrewthetechie/err-aprs-backend/issues/57)) ([245b2f7](https://github.com/andrewthetechie/err-aprs-backend/commit/245b2f7d3c17e261d8e1d36cd6dd281ef83f2de5))
+
+
+### Bug Fixes
+
+* bugfixes ([d5b57eb](https://github.com/andrewthetechie/err-aprs-backend/commit/d5b57eb923bd3e003f7e654254ed955cd2439952))
+* cleanup some dev methods ([01d3033](https://github.com/andrewthetechie/err-aprs-backend/commit/01d3033e0e918924702dfbf2d95c7271078a1cd3))
+* make warn_admins aprs friendly ([#58](https://github.com/andrewthetechie/err-aprs-backend/issues/58)) ([acee0b0](https://github.com/andrewthetechie/err-aprs-backend/commit/acee0b0f703b218bf9663f63858015452023711e))
+
+
+### Dependencies
+
+* bump coverage from 7.4.4 to 7.5.0 ([6a86f64](https://github.com/andrewthetechie/err-aprs-backend/commit/6a86f64cd056593cd9d35c35f0822a62c28916a3))
+* bump ruff from 0.3.7 to 0.4.0 ([9be3d82](https://github.com/andrewthetechie/err-aprs-backend/commit/9be3d8212f00e30f7f78688ecf65f2c86f8f31fe))
+* bump ruff from 0.4.0 to 0.4.1 ([84ec6f3](https://github.com/andrewthetechie/err-aprs-backend/commit/84ec6f35935cf78e9f86279289508d4dcbe26124))
+* bump ruff from 0.4.1 to 0.4.2 ([781e855](https://github.com/andrewthetechie/err-aprs-backend/commit/781e855fa042d1f5ad5274a28c87d56d3c230f20))
+
 ## [0.1.1](https://github.com/andrewthetechie/err-aprs-backend/compare/v0.1.0...v0.1.1) (2024-04-15)
 
 
