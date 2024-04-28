@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/andrewthetechie/err-aprs-backend/compare/v0.2.0...v0.3.0) (2024-04-28)
+
+
+### Features
+
+* docker image for err-aprs-backend ([#59](https://github.com/andrewthetechie/err-aprs-backend/issues/59)) ([a82ca42](https://github.com/andrewthetechie/err-aprs-backend/commit/a82ca425439291b06e9ae0d62162f5fcbe6ec1d1))
+
 ## [0.2.0](https://github.com/andrewthetechie/err-aprs-backend/compare/v0.1.1...v0.2.0) (2024-04-28)
 
 
