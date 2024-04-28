@@ -1,4 +1,5 @@
 """Nox sessions."""
+
 import os
 import shlex
 import sys
@@ -33,12 +34,8 @@ nox.options.sessions = (
 )
 mypy_type_packages = ()
 pyproject = toml.load("pyproject.toml")
-test_requirements = list(
-    pyproject["tool"]["poetry"]["group"]["dev"]["dependencies"].keys()
-)
-errbot_version = pyproject["tool"]["errbot"]["backend_plugins"][
-    "supported_errbot_version"
-]
+test_requirements = list(pyproject["tool"]["poetry"]["group"]["dev"]["dependencies"].keys())
+errbot_version = pyproject["tool"]["errbot"]["backend_plugins"]["supported_errbot_version"]
 # test_requirements.append(f"errbot{errbot_version}")
 
 
@@ -58,8 +55,7 @@ def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
     # quoting rules for Python and bash, but strip the outermost quotes so we
     # can detect paths within the bindir, like <bindir>/python.
     bindirs = [
-        bindir[1:-1] if bindir[0] in "'\"" else bindir
-        for bindir in (repr(session.bin), shlex.quote(session.bin))
+        bindir[1:-1] if bindir[0] in "'\"" else bindir for bindir in (repr(session.bin), shlex.quote(session.bin))
     ]
 
     virtualenv = session.env.get("VIRTUAL_ENV")
@@ -96,10 +92,7 @@ def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
 
         text = hook.read_text()
 
-        if not any(
-            Path("A") == Path("a") and bindir.lower() in text.lower() or bindir in text
-            for bindir in bindirs
-        ):
+        if not any(Path("A") == Path("a") and bindir.lower() in text.lower() or bindir in text for bindir in bindirs):
             continue
 
         lines = text.splitlines()

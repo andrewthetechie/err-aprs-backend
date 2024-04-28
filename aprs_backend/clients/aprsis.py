@@ -2,18 +2,28 @@ import logging
 import asyncio
 from functools import cached_property
 import time
-from aprs_backend.exceptions.client.aprsis import APRSISClientError, APRSISConnnectError, APRSISPacketError, APRSISDeadConnectionError, APRSISPacketDecodeError
+from aprs_backend.exceptions.client.aprsis import (
+    APRSISClientError,
+    APRSISConnnectError,
+    APRSISPacketError,
+    APRSISDeadConnectionError,
+    APRSISPacketDecodeError,
+)
+
 
 class APRSISClient:
-    def __init__(self, callsign: str,
-               password: int,
-               host: str = "rotate.aprs2.net",
-               port: int = 14580,
-               aprs_filter: str = "DEFAULT",
-               aprs_app_name: str = "ErrbotAPRS",
-               app_version: str = "",
-               logger: logging.Logger | None = None,
-               keepalive_seconds: int = 120):
+    def __init__(
+        self,
+        callsign: str,
+        password: int,
+        host: str = "rotate.aprs2.net",
+        port: int = 14580,
+        aprs_filter: str = "DEFAULT",
+        aprs_app_name: str = "ErrbotAPRS",
+        app_version: str = "",
+        logger: logging.Logger | None = None,
+        keepalive_seconds: int = 120,
+    ):
         self.callsign = callsign
         self.password = password
         self.aprs_host = host
@@ -37,11 +47,11 @@ class APRSISClient:
         self._last_successful_connect = 0
 
     @cached_property
-    def _aprs_login(self)->bytes:
+    def _aprs_login(self) -> bytes:
         return f"user {self.callsign} pass {self.password} vers {self._aprs_app_name} {self._app_version} filter {self.aprs_filter}\n"
 
     @cached_property
-    def _keepalive_packet(self)->bytes:
+    def _keepalive_packet(self) -> bytes:
         return b"#keepalive\n"
 
     async def connect(self) -> None:
@@ -51,18 +61,19 @@ class APRSISClient:
             # login to aprsis
             await self._send(self._aprs_login)
             self._last_successful_connect = time.perf_counter()
-            self._log.info("Connected to %s/%s:%s as %s with filter %s",
-                        self.aprs_host,
-                        self._get_sock_peer_ip(self._writer),
-                        self.aprs_port,
-                        self.callsign,
-                        self.aprs_filter
-                        )
+            self._log.info(
+                "Connected to %s/%s:%s as %s with filter %s",
+                self.aprs_host,
+                self._get_sock_peer_ip(self._writer),
+                self.aprs_port,
+                self.callsign,
+                self.aprs_filter,
+            )
             self.connected = True
         except Exception as exc:
-             self._log.error("Error while connecting: %s", exc)
-             self.connected = False
-             raise APRSISConnnectError from exc
+            self._log.error("Error while connecting: %s", exc)
+            self.connected = False
+            raise APRSISConnnectError from exc
 
     async def disconnect(self):
         self._log.info("Disconnecting from aprsis")
@@ -78,8 +89,14 @@ class APRSISClient:
     async def _send(self, packet: str, encoding: str = "utf-8") -> None:
         self._log.debug("Sending '%s'", packet)
         packet = packet.rstrip("\r\n") + "\r\n"
-        self._writer.write(packet.encode(encoding))
-        await self._writer.drain()
+        if packet is None:
+            self._log.error("Packet is None - %s - Dropping", packet)
+            return
+        if self._writer is not None:
+            self._writer.write(packet.encode(encoding))
+            await self._writer.drain()
+        else:
+            self._log.error("Disconnected, unable to send packet %s, dropped", packet)
 
     async def _send_keepalive(self) -> bool:
         """
@@ -89,7 +106,7 @@ class APRSISClient:
         now = time.perf_counter()
         if self.connected:
             if (now - self._keepalive_last_sent) > self._keepalive_seconds:
-                self._log.debug(f'Sending keepalive to {self._get_sock_peer_ip(self._writer)}')
+                self._log.debug(f"Sending keepalive to {self._get_sock_peer_ip(self._writer)}")
                 await self._send(self._keepalive_packet)
                 self._keepalive_last_sent = now
                 return True
@@ -111,7 +128,7 @@ class APRSISClient:
             # Read packet string from socket
             packet_bytes = await self._reader.readline()
         except Exception as exc:
-            logging.error('Could not read packet: %s', exc)
+            logging.error("Could not read packet: %s", exc)
             raise APRSISPacketError from exc
 
         if not packet_bytes:
@@ -131,7 +148,7 @@ class APRSISClient:
 
     @staticmethod
     def _get_sock_peer_ip(writer):
-        sock = writer.get_extra_info('socket')
+        sock = writer.get_extra_info("socket")
         if sock:
             return sock.getpeername()[0]
         return None

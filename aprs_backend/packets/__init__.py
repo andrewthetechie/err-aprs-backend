@@ -9,6 +9,7 @@ def _init_timestamp():
     """Build a unix style timestamp integer"""
     return int(round(time.time()))
 
+
 @dataclass_json
 @dataclass(unsafe_hash=True)
 class Packet:
@@ -17,7 +18,7 @@ class Packet:
     to_call: str | None = field(default=None)
     addresse: str | None = field(default=None)
     format: str | None = field(default=None)
-    msgNo: str | None = field(default=None)   # noqa: N815
+    msgNo: str | None = field(default=None)  # noqa: N815
     packet_type: str | None = field(default=None)
     timestamp: float = field(default_factory=_init_timestamp, compare=False, hash=False)
     # Holds the raw text string to be sent over the wire
@@ -86,9 +87,7 @@ class Packet:
             raise ValueError("to_call isn't set. Must set to_call before calling prepare()")
 
         # The base packet class has no real payload
-        self.payload = (
-            f":{self.to_call.ljust(9)}"
-        )
+        self.payload = f":{self.to_call.ljust(9)}"
 
     def _build_raw(self) -> None:
         """Build the self.raw which is what is sent over the air."""
@@ -109,8 +108,10 @@ class Packet:
         message = msg[:67]
         # We all miss George Carlin
         return re.sub(
-            "fuck|shit|cunt|piss|cock|bitch", "****",
-            message, flags=re.IGNORECASE,
+            "fuck|shit|cunt|piss|cock|bitch",
+            "****",
+            message,
+            flags=re.IGNORECASE,
         )
 
     def __str__(self) -> str:
@@ -123,11 +124,7 @@ class Packet:
 
     def __repr__(self) -> str:
         """Build the repr version of the packet."""
-        repr = (
-            f"{self.__class__.__name__}:"
-            f" From: {self.from_call}  "
-            f"   To: {self.to_call}"
-        )
+        repr = f"{self.__class__.__name__}:" f" From: {self.from_call}  " f"   To: {self.to_call}"
         return repr
 
 

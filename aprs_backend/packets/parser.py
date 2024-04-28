@@ -71,13 +71,13 @@ def parse(packet_str: str) -> AckPacket | RejectPacket | MessagePacket | None:
     if msg_no is None and message_text is not None:
         message_text, msg_no, is_new_ackrej = check_for_new_ackrej_format(message_text=message_text)
 
-    raw_aprs_packet['from'] = from_callsign
-    raw_aprs_packet['message_text'] = message_text
-    raw_aprs_packet['msgNo'] = msg_no
-    raw_aprs_packet['is_new_ackrej'] = is_new_ackrej
-    raw_aprs_packet['packet_type'] = get_packet_type(raw_aprs_packet)
+    raw_aprs_packet["from"] = from_callsign
+    raw_aprs_packet["message_text"] = message_text
+    raw_aprs_packet["msgNo"] = msg_no
+    raw_aprs_packet["is_new_ackrej"] = is_new_ackrej
+    raw_aprs_packet["packet_type"] = get_packet_type(raw_aprs_packet)
 
-    match raw_aprs_packet['packet_type']:
+    match raw_aprs_packet["packet_type"]:
         case "MESSAGE":
             packet = MessagePacket.from_dict(raw_aprs_packet)
             packet.from_call = from_callsign
@@ -95,6 +95,7 @@ def parse(packet_str: str) -> AckPacket | RejectPacket | MessagePacket | None:
             packet = None
 
     return packet
+
 
 def check_for_new_ackrej_format(message_text: str) -> tuple[str, str, bool]:
     """
@@ -208,9 +209,7 @@ def check_for_new_ackrej_format(message_text: str) -> tuple[str, str, bool]:
     # bb = message number
     # cc = message retry (may or may not be present)
     if message_text:
-        matches = re.search(
-            r"^(.*){([a-zA-Z0-9]{2})}(\w*)$", message_text, re.IGNORECASE
-        )
+        matches = re.search(r"^(.*){([a-zA-Z0-9]{2})}(\w*)$", message_text, re.IGNORECASE)
         if matches:
             try:
                 msg = matches[1].rstrip()
