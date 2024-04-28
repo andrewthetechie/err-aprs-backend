@@ -146,6 +146,16 @@ class APRSBackend(ErrBot):
         log.debug("Recieved msg %s", msg)
         super().callback_message(msg)
 
+    def warn_admins(self, warning: str) -> None:
+        """
+        Send a warning to the administrators of the bot.
+        For APRS this is too spammy over the airwaves, only log admin warnings to
+        the bots log at a warning level
+
+        :param warning: The markdown-formatted text of the message to send.
+        """
+        log.warning(warning)
+
     async def retry_worker(self) -> None:
         """Processes self._waiting_ack for messages we've sent that have not been acked
 
