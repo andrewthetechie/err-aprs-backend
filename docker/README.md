@@ -17,6 +17,9 @@ SUPPRESS_CMD_NOT_FOUND is set to true, this means the bot will just not respond 
 
 BOT_PREFIX_OPTIONAL_ON_CHAT is set to true, this means that commands can be run with the prefix
 
+Any environment variable that is proceeded with "ERR_APRS_" will get added to the config automatically. For example "ERR_ARPS_FOO=bar" will result in `FOO="bar` in
+the errbot config
+
 ## Plugins
 
 Plugins can be added to /errbot/plugins or you can reconfigure the directory by setting BOT_PLUGIN_DIR
