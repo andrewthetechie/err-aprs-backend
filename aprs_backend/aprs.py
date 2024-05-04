@@ -49,13 +49,13 @@ class APRSBackend(ErrBot):
             sys.exit(1)
 
         self.callsign = aprs_config["callsign"]
-        self.from_call = getattr(self._errbot_config, "APRS_FROM_CALLSIGN", self.callsign)
-        self.listened_callsigns = getattr(self._errbot_config, "APRS_LISTENED_CALLSIGNS", ())
+        self.from_call = self._get_from_config("APRS_FROM_CALLSIGN", self.callsign)
+        self.listened_callsigns = self._get_from_config("APRS_LISTENED_CALLSIGNS", ())
         self.bot_identifier = APRSPerson(self.callsign)
         self._multiline = False
         self._client = APRSISClient(**aprs_config, logger=log)
-        self._send_queue = asyncio.Queue(maxsize=int(getattr(self._errbot_config, "APRS_SEND_MAX_QUEUE", "2048")))
-        self.help_text = getattr(self._errbot_config, "APRS_HELP_TEXT", "APRSBot,Errbot & err-aprs-backend")
+        self._send_queue = asyncio.Queue(maxsize=int(self._get_from_config("APRS_SEND_MAX_QUEUE", "2048")))
+        self.help_text = self._get_from_config("APRS_HELP_TEXT", "APRSBot,Errbot & err-aprs-backend")
 
         self._message_counter = MessageCounter(initial_value=randint(1, 20))  # nosec not used cryptographically
         self._max_dropped_packets = int(self._get_from_config("APRS_MAX_DROPPED_PACKETS", "25"))
