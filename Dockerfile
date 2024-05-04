@@ -6,7 +6,7 @@ COPY .github/workflows/constraints.txt /constraints.txt
 RUN pip install --upgrade --constraint /constraints.txt pip poetry
 COPY ./ /app
 WORKDIR /app
-RUN poetry build
+RUN rm -rf dist && poetry build
 
 from python:3.11-slim
 ARG ERRBOT_VERSION=6.2.0

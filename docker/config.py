@@ -56,6 +56,10 @@ SUPPRESS_CMD_NOT_FOUND = True
 CORE_PLUGINS = (
     "ACLs",
     "CommandNotFoundFilter",
-    "VersionChecker",
-    "Webserver",
+    "VersionCheck" "Webserver",
 )
+
+for env_var, value in os.environ.items():
+    if env_var.startswith("ERR_APRS_"):
+        variable_name = env_var[len("ERR_APRS_") :].upper()
+        exec(f"{variable_name} = '{value}'")  # nosec b102 - exec used here intentionally
