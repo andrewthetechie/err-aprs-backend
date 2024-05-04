@@ -2,7 +2,7 @@ import logging
 import asyncio
 from functools import cached_property
 import time
-from aprs_backend.exceptions.client.aprsis import (
+from aprs_backend.exceptions import (
     APRSISClientError,
     APRSISConnnectError,
     APRSISPacketError,

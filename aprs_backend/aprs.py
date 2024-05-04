@@ -8,9 +8,7 @@ from aprs_backend.version import __version__ as ERR_APRS_VERSION
 from errbot.backends.base import Message
 from errbot.backends.base import ONLINE
 from errbot.core import ErrBot
-from aprs_backend.exceptions.client.aprsis import APRSISConnnectError
-from aprs_backend.exceptions.packets.parser import PacketParseError
-from aprs_backend.exceptions import APRSBackendException
+from aprs_backend.exceptions import ProcessorError, PacketParseError, APRSISConnnectError
 from aprs_backend.packets.parser import parse, hash_packet
 from expiringdict import ExpiringDict
 from functools import cached_property
@@ -31,10 +29,6 @@ for handler in log.handlers:
     handler.setFormatter(
         logging.Formatter("%(filename)s: " "%(levelname)s: " "%(funcName)s(): " "%(lineno)d:\t" "%(message)s")
     )
-
-
-class ProcessorError(APRSBackendException):
-    pass
 
 
 class APRSBackend(ErrBot):

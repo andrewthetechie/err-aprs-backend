@@ -1,5 +1,5 @@
 from aprs_backend.exceptions.base import APRSBackendException
 
 
-class PacketException(APRSBackendException):
+class ProcessorError(APRSBackendException):
     pass

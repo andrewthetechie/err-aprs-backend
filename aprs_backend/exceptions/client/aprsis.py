@@ -1,4 +1,4 @@
-from . import ClientError
+from aprs_backend.exceptions.client import ClientError
 
 
 class APRSISClientError(ClientError):
