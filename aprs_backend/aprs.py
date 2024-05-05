@@ -38,6 +38,8 @@ class APRSBackend(ErrBot):
         self._errbot_config = config
         aprs_config = {"host": "rotate.aprs.net", "port": 14580}
         aprs_config.update(config.BOT_IDENTITY)
+        aprs_config["aprs_app_name"] = "ErrbotAPRS"
+        aprs_config["app_version"] = f"{ERR_APRS_VERSION}:{ERR_VERSION}"
 
         self._sender_config = {}
 
@@ -48,14 +50,22 @@ class APRSBackend(ErrBot):
             log.fatal("No password in bot identity")
             sys.exit(1)
 
-        self.callsign = aprs_config["callsign"]
-        self.from_call = self._get_from_config("APRS_FROM_CALLSIGN", self.callsign)
-        self.listened_callsigns = self._get_from_config("APRS_LISTENED_CALLSIGNS", ())
+        self.listening_callsigns = [aprs_config["callsign"]]
+
+        self.callsign = self._get_from_config("APRS_BOT_CALLSIGN", aprs_config["callsign"])
         self.bot_identifier = APRSPerson(self.callsign)
         self._multiline = False
+        # bot is using a different callsign from the signin, add it to the filter
+        if self.callsign != aprs_config["callsign"]:
+            aprs_config["aprs_filter"] = f"g/{aprs_config['callsign']}/{self.callsign}"
+            self.listening_callsigns.append(self.callsign)
         self._client = APRSISClient(**aprs_config, logger=log)
-        self._send_queue = asyncio.Queue(maxsize=int(self._get_from_config("APRS_SEND_MAX_QUEUE", "2048")))
-        self.help_text = self._get_from_config("APRS_HELP_TEXT", "APRSBot,Errbot & err-aprs-backend")
+        self._send_queue: asyncio.Queue[MessagePacket] = asyncio.Queue(
+            maxsize=int(self._get_from_config("APRS_SEND_MAX_QUEUE", "2048"))
+        )
+        self.help_text = self._get_from_config(
+            "APRS_HELP_TEXT", f"Errbot {ERR_VERSION} & err-aprs-backend {ERR_APRS_VERSION} by {aprs_config['callsign']}"
+        )
 
         self._message_counter = MessageCounter(initial_value=randint(1, 20))  # nosec not used cryptographically
         self._max_dropped_packets = int(self._get_from_config("APRS_MAX_DROPPED_PACKETS", "25"))
@@ -88,7 +98,7 @@ class APRSBackend(ErrBot):
             self.registry_app_config = RegistryAppConfig(
                 description=self._get_from_config("APRS_REGISTRY_DESCRIPTION", "err-aprs-backend powered bot"),
                 website=self._get_from_config("APRS_REGISTRY_WEBSITE", ""),
-                listening_callsigns=[self.from_call] + [call for call in self.listened_callsigns],
+                listening_callsigns=self.listening_callsigns,
                 software=self._get_from_config(
                     "APRS_REGISTRY_SOFTWARE", f"err-aprs-backend {ERR_APRS_VERSION} errbot {ERR_VERSION}"
                 ),
@@ -167,22 +177,22 @@ class APRSBackend(ErrBot):
                     await self.__drop_message_from_waiting(key)
                     continue
 
-                # if this packet has not been sent in self._message_retry_wait seconds, resent it
-                # it hasn't been ack'd yet
+                # if this packet has not been sent in self._message_retry_wait seconds, resend it
+                # because it hasn't been ack'd yet
                 if (datetime.now() - this_packet.last_send_time).total_seconds() > self._message_retry_wait:
                     log.debug("Message %s needs to be re-sent %s", key, this_packet.json)
                     self.send_message(APRSMessage.from_message_packet(this_packet))
                 # release the loop for a bit
-                await asyncio.sleep(0.01)
+                await asyncio.sleep(0.001)
             # release the loop for a bit longer after we've gone through all keys
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(5)
 
     async def send_worker(self) -> None:
         """Processes self._send_queue to send messages to APRS"""
         log.debug("send_worker started")
         while True:
             try:
-                packet = self._send_queue.get_nowait()
+                packet: MessagePacket = self._send_queue.get_nowait()
             except asyncio.QueueEmpty:
                 packet = None
             if packet is not None:
@@ -193,7 +203,7 @@ class APRSBackend(ErrBot):
                 packet.last_send_time = datetime.now()
                 packet.last_send_attempt += 1
                 async with self._waiting_ack_lock:
-                    self._waiting_ack[hash_packet(packet)] = packet
+                    self._waiting_ack[f"{packet.to}-{packet.msgNo}"] = packet
                 self._send_queue.task_done()
             # release the loop for a bit
             await asyncio.sleep(0.01)
@@ -219,15 +229,14 @@ class APRSBackend(ErrBot):
                     continue
                 try:
                     parsed_packet = parse(packet_str)
-                    # release the loop for a bit
-                    await asyncio.sleep(0.01)
+                    # release the loop for a tiny bit
+                    await asyncio.sleep(0.001)
                     if parsed_packet is not None:
-                        if parsed_packet.to == self.callsign or parsed_packet.to in self.listened_callsigns:
+                        # filtering should handle this, but belt and syspenders
+                        if parsed_packet.to in self.listening_callsigns:
                             await self.process_packet(parsed_packet)
                         else:
-                            log.info(
-                                "Packet was not addressed to bot or listened callsigns, not processing %s", packet_str
-                            )
+                            log.info("Packet was not addressed to the bot, not processing %s", packet_str)
                     else:
                         log.info("This packet parsed to be None: %s", packet_str)
                 except PacketParseError as exc:
@@ -302,7 +311,7 @@ class APRSBackend(ErrBot):
         if msgNo is None:
             msgNo = self._message_counter.get_value_sync()
         msg_packet = MessagePacket(
-            from_call=self.from_call,
+            from_call=msg.frm.callsign,
             to_call=msg.to.callsign,
             addresse=msg.to.callsign,
             message_text=msg_text,
@@ -342,21 +351,26 @@ class APRSBackend(ErrBot):
         elif isinstance(packet, AckPacket) or isinstance(packet, RejectPacket):
             await self._process_ack_rej(packet)
 
-    async def _process_ack_rej(self, packet: dict[str, str | bool]) -> None:
+    async def _process_ack_rej(self, packet: AckPacket | RejectPacket) -> None:
         """
         Process an ack or reject packet by checking if its in the messages
         waiting for an ack and if so, remove it the message
         """
         # Remove this message from our sent messages that are waiting for acks
-        await self.__drop_message_from_waiting(hash_packet(packet))
+        log.debug(
+            "Processing ACK/REJ packet for msgno %s from %s to %s", packet.msgNo, packet.from_call, packet.addresse
+        )
+        await self.__drop_message_from_waiting(f"{packet.from_call}-{packet.msgNo}")
 
     async def __drop_message_from_waiting(self, message_hash: str) -> None:
         """Gets the waiting_ack_lock and deletes a message from _waiting_ack if it exists"""
+        log.debug("Dropping message hash %s", message_hash)
         async with self._waiting_ack_lock:
-            try:
-                self._waiting_ack.pop(message_hash)
-            except KeyError:
-                pass
+            packet = self._waiting_ack.pop(message_hash)
+        if packet is None:
+            log.error("Tried to drop hash %s and it didn't exist in waiting ack", message_hash)
+        else:
+            log.debug("Dropped Packet from waiting_ack: %s", packet)
 
     def handle_help(self, msg: APRSMessage) -> None:
         """Returns simplified help text for the APRS backend"""
@@ -380,14 +394,15 @@ class APRSBackend(ErrBot):
                 return
             self._packet_cache[this_packet_hash] = packet
         msg = APRSMessage.from_message_packet(packet)
-        if msg.body.lower().strip(" ").strip("\n").strip("\r") == "help":
+        msg.body = msg.body.strip("\n").strip("\r")
+        if msg.body.lower().strip(" ") == "help":
             return self.handle_help(msg)
         return self.callback_message(msg)
 
     async def _ack_message(self, packet: MessagePacket) -> None:
         log.debug("Sending ack for packet %s", packet.json)
         this_ack = AckPacket(
-            from_call=self.from_call, to_call=packet.from_call, addresse=packet.from_call, msgNo=packet.msgNo
+            from_call=packet.to, to_call=packet.from_call, addresse=packet.from_call, msgNo=packet.msgNo
         )
         await this_ack.prepare(self._message_counter)
         this_ack.update_timestamp()

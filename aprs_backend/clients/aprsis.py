@@ -5,6 +5,7 @@ import time
 from aprs_backend.exceptions import (
     APRSISClientError,
     APRSISConnnectError,
+    APRSISLoginError,
     APRSISPacketError,
     APRSISDeadConnectionError,
     APRSISPacketDecodeError,
@@ -33,9 +34,6 @@ class APRSISClient:
         self._app_version = app_version
         self._keepalive_seconds = keepalive_seconds
 
-        if self.aprs_filter.lower() == "default":
-            self.aprs_filter = f"g/{self.callsign}"
-
         self._log = logger if logger is not None else logging.getLogger(__name__)
 
         self.connected = False
@@ -48,7 +46,46 @@ class APRSISClient:
 
     @cached_property
     def _aprs_login(self) -> bytes:
-        return f"user {self.callsign} pass {self.password} vers {self._aprs_app_name} {self._app_version} filter {self.aprs_filter}\n"
+        base_str = f"user {self.callsign} pass {self.password} vers {self._aprs_app_name} {self._app_version}"
+        if self.aprs_filter.lower() != "default":
+            base_str = base_str + f" filter {self.aprs_filter}\r\n"
+        return base_str
+
+    async def _send_login(self):
+        """
+        Sends login string to server
+        """
+
+        self._log.info("Sending login information")
+        try:
+            await self._send(self._aprs_login)
+            aprs_version = await self._reader.readline()
+            aprs_version = aprs_version.decode("latin-1").rstrip()
+            aprs_login_test = await self._reader.readline()
+            aprs_login_test = aprs_login_test.decode("latin-1").rstrip()
+            self._log.debug("APRS server version Response %s", aprs_version)
+            _, _, callsign, status, _, server = aprs_login_test.split(" ", 5)
+            status = status.replace(",", "").lower()
+
+            if callsign == "":
+                raise APRSISLoginError("Server responded with empty callsign???")
+            if callsign != self.callsign:
+                raise APRSISLoginError("Server responsed with: %s" % aprs_login_test)
+            if status != "verified" and self.password != "-1":  # nosec not a hardcoded password
+                raise APRSISLoginError("Password is incorrect")
+
+            if self.password == "-1":  # nosec not a hardcoded password
+                self._log.info("Login successful (receive only)")
+            else:
+                self._log.info("Login successful")
+        except APRSISLoginError as e:
+            self._log.error(str(e))
+            await self.disconnect()
+            raise
+        except Exception as exc:
+            await self.disconnect()
+            self._log.error("Failed to login %s", str(exc))
+            raise APRSISLoginError("Failed to login") from exc
 
     @cached_property
     def _keepalive_packet(self) -> bytes:
@@ -59,7 +96,7 @@ class APRSISClient:
         try:
             self._reader, self._writer = await asyncio.open_connection(self.aprs_host, self.aprs_port)
             # login to aprsis
-            await self._send(self._aprs_login)
+            await self._send_login()
             self._last_successful_connect = time.perf_counter()
             self._log.info(
                 "Connected to %s/%s:%s as %s with filter %s",
@@ -78,9 +115,7 @@ class APRSISClient:
     async def disconnect(self):
         self._log.info("Disconnecting from aprsis")
         self._writer.close()
-        self._reader.close()
         await self._writer.wait_closed()
-        await self._reader.wait_closed()
         self._writer = None
         self._reader = None
         self.connected = False

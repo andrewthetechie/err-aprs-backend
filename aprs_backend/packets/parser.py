@@ -250,4 +250,7 @@ def get_packet_type(packet: dict) -> str:
 
 @lru_cache(maxsize=128)
 def hash_packet(packet: AckPacket | MessagePacket | RejectPacket) -> str:
-    return sha256(f"{packet.to}-{packet.msgNo}-{packet.from_call}".encode()).hexdigest()
+    involved_stations = [packet.to, packet.addresse]
+    # alphabetize them for norming
+    involved_stations.sort()
+    return sha256((",".join(involved_stations) + f"-{packet.msgNo}").encode()).hexdigest()
