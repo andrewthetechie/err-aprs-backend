@@ -30,8 +30,7 @@ BOT_ADMINS = __callsign
 
 BOT_IDENTITY = {"callsign": __callsign, "password": __password}
 
-APRS_FROM_CALLSIGN = os.environ.get("APRS_FROM_CALLSIGN", __callsign)
-APRS_LISTENED_CALLSIGNS = tuple(os.environ.get("APRS_LISTENED_CALLSIGNS", "").strip(",").split(","))
+APRS_BOT_CALLSIGN = os.environ.get("APRS_BOT_CALLSIGN", __callsign)
 APRS_HELP_TEXT = os.environ.get("APRS_HELP_TEXT", "APRSBot,Errbot & err-aprs-backend")
 APRS_MAX_DROPPED_PACKETS = os.environ.get("APRS_MAX_DROPPED_PACKETS", "25")
 APRS_MAX_CACHED_PACKETS = os.environ.get("APRS_MAX_CACHED_PACKETS", "2048")

@@ -2,8 +2,22 @@
 
 These options can be set in your errbot config.py to configure the APRS backend.
 
-* APRS_FROM_CALLSIGN - default is your bot identity callsign, but you can set to reply as a different callsign
-* APRS_LISTENED_CALLSIGNS - default (), set of callsigns to listen to
+## BOT_IDENTITY
+
+```
+BOT_ADMINS = (
+    "YOURCALL-SSID",
+)
+
+BOT_IDENTITY = {
+    "callsign": "YOURCALL-SSID",
+    "password": "APRSIS PASSWORD"
+}
+```
+
+## Other Config
+
+* APRS_BOT_CALLSIGN - default "", If set, the bot will listen on and reply from a differnent callsign than the one you signed in with. Good for setting a bot with a short callsign to run as a service (i.e. ANSRVR, REPEAT, etc)
 * APRS_HELP_TEXT - default "APRSBot,Errbot & err-aprs-backend", set this to your text. Probably a good idea to set it to website for complex help text due to message character limits
 * APRS_MAX_DROPPED_PACKETS - default "25", how many packets we can drop before the bot backend will restart
 * APRS_MAX_CACHED_PACKETS - default "2048", how many packets to hold in the cache to dedupe.

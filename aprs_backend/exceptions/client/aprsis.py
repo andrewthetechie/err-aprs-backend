@@ -9,6 +9,10 @@ class APRSISConnnectError(APRSISClientError):
     pass
 
 
+class APRSISLoginError(APRSISConnnectError):
+    pass
+
+
 class APRSISPacketError(APRSISClientError):
     pass
 
