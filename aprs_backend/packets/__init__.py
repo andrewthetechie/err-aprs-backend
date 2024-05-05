@@ -1,13 +1,11 @@
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
-import time
-import re
 from aprs_backend.utils.counter import MessageCounter
-
-
-def _init_timestamp():
-    """Build a unix style timestamp integer"""
-    return int(round(time.time()))
+from aprs_backend.utils.position import latitude_to_ddm, longitude_to_ddm
+from aprs_backend.utils.datetime import init_timestamp
+from datetime import datetime, timezone
+from better_profanity import profanity
+from aprs_backend.version import __version__ as BACKEND_VERSION
 
 
 @dataclass_json
@@ -20,7 +18,7 @@ class Packet:
     format: str | None = field(default=None)
     msgNo: str | None = field(default=None)  # noqa: N815
     packet_type: str | None = field(default=None)
-    timestamp: float = field(default_factory=_init_timestamp, compare=False, hash=False)
+    timestamp: float = field(default_factory=init_timestamp, compare=False, hash=False)
     # Holds the raw text string to be sent over the wire
     # or holds the raw string from input packet
     raw: str | None = field(default=None, compare=False, hash=False)
@@ -60,7 +58,7 @@ class Packet:
         return f"{self.from_call}:{self.addresse}:{self.msgNo}"
 
     def update_timestamp(self) -> None:
-        self.timestamp = _init_timestamp()
+        self.timestamp = init_timestamp()
 
     @property
     def human_info(self) -> str:
@@ -91,28 +89,17 @@ class Packet:
 
     def _build_raw(self) -> None:
         """Build the self.raw which is what is sent over the air."""
-        self.raw = "{}>APZ100:{}".format(
+        self.raw = "{}>APERRB:{}".format(
             self.from_call,
             self.payload,
         )
 
-    def _filter_for_send(self, msg) -> str:
-        """Filter and format message string for FCC."""
+    def _filter_for_send(self, msg: str | None) -> str:
+        """Limit message size based on best guess fo displayability"""
         # max?  ftm400 displays 64, raw msg shows 74
         # and ftm400-send is max 64.  setting this to
         # 67 displays 64 on the ftm400. (+3 {01 suffix)
-        # feature req: break long ones into two msgs
-        if not msg:
-            return ""
-
-        message = msg[:67]
-        # We all miss George Carlin
-        return re.sub(
-            "fuck|shit|cunt|piss|cock|bitch",
-            "****",
-            message,
-            flags=re.IGNORECASE,
-        )
+        return msg[:67] if msg else ""
 
     def __str__(self) -> str:
         """Show the raw version of the packet"""
@@ -159,3 +146,105 @@ class MessagePacket(Packet):
             self._filter_for_send(self.message_text).rstrip("\n"),
             str(self.msgNo),
         )
+
+
+@dataclass_json
+@dataclass(unsafe_hash=True)
+class PositionPacket(Packet):
+    _type: str = field(default="GPSPacket", hash=False)
+    latitude: float = field(default=0.00)
+    longitude: float = field(default=0.00)
+    altitude: float = field(default=0.00)
+    rng: float = field(default=0.00)
+    posambiguity: int = field(default=0)
+    messagecapable: bool = field(default=False)
+    comment: str | None = field(default=None)
+    symbol: str = field(default="l")
+    symbol_table: str = field(default="/")
+    raw_timestamp: str | None = field(default=None)
+    object_name: str | None = field(default=None)
+    object_format: str | None = field(default=None)
+    alive: bool | None = field(default=None)
+    course: int | None = field(default=None)
+    speed: float | None = field(default=None)
+    phg: str | None = field(default=None)
+    phg_power: int | None = field(default=None)
+    phg_height: float | None = field(default=None)
+    phg_gain: int | None = field(default=None)
+    phg_dir: str | None = field(default=None)
+    phg_range: float | None = field(default=None)
+    phg_rate: int | None = field(default=None)
+    # http://www.aprs.org/datum.txt
+    daodatumbyte: str | None = field(default=None)
+
+    def _build_time_zulu(self) -> datetime:
+        """Build the timestamp in UTC/zulu."""
+        if self.timestamp:
+            return datetime.fromtimestamp(self.timestamp, timezone.utc).strftime("%d%H%M")
+
+    def _build_payload(self) -> None:
+        """The payload is the non headers portion of the packet."""
+        time_zulu = self._build_time_zulu()
+        lat = latitude_to_ddm(self.latitude)
+        long = longitude_to_ddm(self.longitude)
+        payload = ["@" if self.timestamp else "!", time_zulu, lat, self.symbol_table, long, self.symbol]
+
+        if self.altitude:
+            payload.append(self.formatted_altitude)
+
+        if self.comment:
+            # run a profanity filter, just in case.
+            payload.append(profanity.censor(self.comment))
+
+        self.payload = "".join(payload)
+
+    def _build_raw(self) -> None:
+        self.raw = f"{self.from_call}>{self.to_call},WIDE2-1:{self.payload}"
+
+    @property
+    def formatted_altitude(self):
+        altitude = self.altitude / 0.3048  # to feet
+        altitude = min(999999, altitude)
+        altitude = max(-99999, altitude)
+        return f"/A={altitude:06.0f}"
+
+    @property
+    def human_info(self) -> str:
+        h_str = []
+        h_str.append(f"Lat:{self.latitude:03.3f}")
+        h_str.append(f"Lon:{self.longitude:03.3f}")
+        if self.altitude:
+            h_str.append(f"Altitude:{self.altitude:03.0f}")
+        if self.speed:
+            h_str.append(f"Speed:{self.speed:03.0f}MPH")
+        if self.course:
+            h_str.append(f"Course:{self.course:03.0f}")
+        if self.rng:
+            h_str.append(f"RNG:{self.rng:03.0f}")
+        if self.phg:
+            h_str.append(f"PHG:{self.phg}")
+
+        return " ".join(h_str)
+
+
+@dataclass_json
+@dataclass(unsafe_hash=True)
+class BeaconPacket(PositionPacket):
+    _type: str = field(default="BeaconPacket", hash=False)
+
+    def _build_payload(self) -> None:
+        """The payload is the non headers portion of the packet."""
+        time_zulu = self._build_time_zulu()
+        lat = latitude_to_ddm(self.latitude)
+        lon = longitude_to_ddm(self.longitude)
+
+        self.payload = f"@{time_zulu}z{lat}{self.symbol_table}{lon}"
+
+        if self.comment:
+            comment = self._filter_for_send(self.comment)
+            self.payload = f"{self.payload}{self.symbol}{comment}"
+        else:
+            self.payload = f"{self.payload}{self.symbol}ErrAprsBackend Beacon {BACKEND_VERSION}"
+
+    def _build_raw(self) -> None:
+        self.raw = f"{self.from_call}>APERRB:" f"{self.payload}"

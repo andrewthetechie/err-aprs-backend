@@ -12,7 +12,7 @@ from aprs_backend.exceptions import ProcessorError, PacketParseError, APRSISConn
 from aprs_backend.packets.parser import parse, hash_packet
 from expiringdict import ExpiringDict
 from functools import cached_property
-from aprs_backend.packets import AckPacket, RejectPacket, MessagePacket
+from aprs_backend.packets import AckPacket, RejectPacket, MessagePacket, BeaconPacket
 from aprs_backend.utils.counter import MessageCounter
 from random import randint
 from datetime import datetime
@@ -21,7 +21,7 @@ from aprs_backend.clients.aprs_registry import APRSRegistryClient, RegistryAppCo
 import logging
 import asyncio
 from errbot.version import VERSION as ERR_VERSION
-
+from aprs_backend.clients.beacon import BeaconConfig, BeaconClient
 
 log = logging.getLogger(__name__)
 
@@ -36,6 +36,8 @@ class APRSBackend(ErrBot):
         log.debug("Initied")
 
         self._errbot_config = config
+        self._multiline = False
+
         aprs_config = {"host": "rotate.aprs.net", "port": 14580}
         aprs_config.update(config.BOT_IDENTITY)
         aprs_config["aprs_app_name"] = "ErrbotAPRS"
@@ -54,9 +56,8 @@ class APRSBackend(ErrBot):
 
         self.callsign = self._get_from_config("APRS_BOT_CALLSIGN", aprs_config["callsign"])
         self.bot_identifier = APRSPerson(self.callsign)
-        self._multiline = False
-        # bot is using a different callsign from the signin, add it to the filter
         if self.callsign != aprs_config["callsign"]:
+            # bot is using a different callsign from the signin, add it to the filter
             aprs_config["aprs_filter"] = f"g/{aprs_config['callsign']}/{self.callsign}"
             self.listening_callsigns.append(self.callsign)
         self._client = APRSISClient(**aprs_config, logger=log)
@@ -77,7 +78,7 @@ class APRSBackend(ErrBot):
         # a stray newline
         self._strip_newlines = str(self._get_from_config("APRS_STRIP_NEWLINES", "true")).lower() == "true"
 
-        # try to strip out "foul" language the FCC would not like. It is possible/probably an errbot bot response could
+        # try to strip out "foul" language the FCC would not like. It is possible/probable an errbot bot response could
         # go out over the airwaves. This is configurable, but probably should remain on.
         self._language_filter = str(self._get_from_config("APRS_LANGUAGE_FILTER", "true")).lower() == "true"
         if self._language_filter:
@@ -114,10 +115,47 @@ class APRSBackend(ErrBot):
         else:
             self.registry_client = None
 
+        self.beacon_config = self._get_beacon_config()
+        if self.beacon_config:
+            self.beacon_client = BeaconClient(
+                beacon_config=self.beacon_config,
+                send_queue=self._send_queue,
+                log=log,
+                frequency_seconds=int(self._get_from_config("APRS_BEACON_INTERVAL_SECONDS", "1200")),
+            )
+        else:
+            self.beacon_client = None
         super().__init__(config)
 
     def _get_from_config(self, key: str, default: any = None) -> any:
         return getattr(self._errbot_config, key, default)
+
+    def _get_beacon_config(self) -> BeaconConfig | None:
+        if self._get_from_config("APRS_BEACON_ENABLE", "false") == "true":
+            return None
+        beacon_config = {}
+        beacon_config["latitude"] = self._get_from_config("APRS_BEACON_LATITUDE", None)
+        beacon_config["longitude"] = self._get_from_config("APRS_BEACON_LONGITUDE", None)
+        beacon_config["symbol"] = self._get_from_config("APRS_BEACON_SYMBOL", None)
+        beacon_config["symbol_table"] = self._get_from_config("APRS_BEACON_SYMBOL_TABLE", None)
+        log.debug("Beacon Config %s", beacon_config)
+        for key, value in beacon_config.items():
+            if value is None:
+                log.error(f"Beacon enabled but APRS_BEACON_{key.upper()} not set. Disabling Beacon.")
+                return None
+
+        for key in ["latitude", "longitude"]:
+            try:
+                beacon_config[key] = float(beacon_config[key])
+            except ValueError:
+                log.error("%s is not a valid float in config. Disabling beacon", key)
+                return None
+
+        for key in ["altitude", "comment"]:
+            if (value := self._get_from_config(f"APRS_BEACON_{key.upper()}", None)) is not None:
+                beacon_config[key] = value
+
+        return BeaconConfig(**beacon_config, from_call=self.callsign)
 
     def build_reply(self, msg: Message, text: str, private: bool = False, threaded: bool = False) -> Message:
         log.debug(msg)
@@ -192,21 +230,33 @@ class APRSBackend(ErrBot):
         log.debug("send_worker started")
         while True:
             try:
-                packet: MessagePacket = self._send_queue.get_nowait()
+                packet: MessagePacket | BeaconPacket = self._send_queue.get_nowait()
             except asyncio.QueueEmpty:
                 packet = None
             if packet is not None:
                 log.debug("send_worker got Packet %s", packet.json)
                 await packet.prepare(self._message_counter)
                 packet.update_timestamp()
-                await self._client._send(packet.raw)
-                packet.last_send_time = datetime.now()
-                packet.last_send_attempt += 1
-                async with self._waiting_ack_lock:
-                    self._waiting_ack[f"{packet.to}-{packet.msgNo}"] = packet
+                result = await self._client._send(packet.raw)
+                if result:
+                    # send was a success
+                    # if this is a message, add it to _waiting_ack
+                    if isinstance(packet, MessagePacket):
+                        packet.last_send_time = datetime.now()
+                        packet.last_send_attempt += 1
+                        async with self._waiting_ack_lock:
+                            self._waiting_ack[f"{packet.to}-{packet.msgNo}"] = packet
+                else:
+                    # sending failed
+                    log.info("Packet sending failed, waiting 1 second then requeing packet %s", packet)
+                    for _ in range(10):
+                        # microsleeps to let this be more cancellable
+                        await asyncio.sleep(0.1)
+                    await self._send_queue.put(packet)
+
                 self._send_queue.task_done()
             # release the loop for a bit
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0.001)
 
     async def receive_worker(self) -> bool:
         """_summary_"""
@@ -225,7 +275,7 @@ class APRSBackend(ErrBot):
                 # or connetion replies info.
                 # They all startwith "# "
                 if packet_str.startswith("# "):
-                    log.debug("Status message from aprs server: %s", packet_str)
+                    log.debug("Status message from aprs server: %s", packet_str.rstrip("\r\n"))
                     continue
                 try:
                     parsed_packet = parse(packet_str)
@@ -236,9 +286,11 @@ class APRSBackend(ErrBot):
                         if parsed_packet.to in self.listening_callsigns:
                             await self.process_packet(parsed_packet)
                         else:
-                            log.info("Packet was not addressed to the bot, not processing %s", packet_str)
+                            log.info(
+                                "Packet was not addressed to the bot, not processing %s", packet_str.rstrip("\r\n")
+                            )
                     else:
-                        log.info("This packet parsed to be None: %s", packet_str)
+                        log.info("This packet parsed to be None: %s", packet_str.rstrip("\r\n"))
                 except PacketParseError as exc:
                     log.error(
                         "Dropping packet %s due to Parsing error: %s. Total Dropped Packets: %s",
@@ -271,6 +323,8 @@ class APRSBackend(ErrBot):
         # if reporting to the aprs service registry is enabled, start a task for it
         if self.registry_client is not None:
             worker_tasks.append(asyncio.create_task(self.registry_client()))
+        if self.beacon_client is not None:
+            worker_tasks.append(asyncio.create_task(self.beacon_client()))
         result = await asyncio.gather(receive_task, return_exceptions=True)
         await self._send_queue.join()
         for task in worker_tasks:
@@ -323,7 +377,7 @@ class APRSBackend(ErrBot):
             self._send_queue.put_nowait(msg_packet)
             log.debug("Packet %s put in send queue", msg_packet.json)
         except asyncio.QueueFull:
-            log.error("Send queue is full, can't send msg %s", msg)
+            log.error("Send queue is full, can't send packet %s", msg_packet.json)
             self._dropped_packets += 1
 
     @property
@@ -376,7 +430,7 @@ class APRSBackend(ErrBot):
         """Returns simplified help text for the APRS backend"""
         help_msg = APRSMessage(body=self.help_text, extras=msg.extras)
         help_msg.to = msg.frm
-        help_msg.frm = APRSPerson(callsign=self.from_call)
+        help_msg.frm = self.bot_identifier
         self.send_message(help_msg)
 
     async def _process_message(self, packet: MessagePacket) -> None:

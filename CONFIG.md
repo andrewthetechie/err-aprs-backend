@@ -33,3 +33,13 @@ BOT_IDENTITY = {
 * APRS_REGISTRY_DESCRIPTION - default "err-aprs-backend powered bot", description for your bot in the Service Regsitry
 * APRS_REGISTRY_WEBSTIRE - default "", website for your service on the APRS registry
 * APRS_REGISTRY_SOFTWARE - default "err-aprs-backend {version} errbot {errbot version}", software string for APRS service registry
+
+## Beacon Config
+
+* APRS_BEACON_ENABLE - default false, set to "true" to enable sending a beacon at a regular interval
+* APRS_BEACON_INTERVAL_SECONDS - default 1200, the interval in seconds between sending beacons
+* APRS_BEACON_LATITUDE - Latitude to send with the beacon, required if beacon is enabled
+* APRS_BEACON_LONGITUDE - Longitude to send with the beacon, required if beacon is enabled
+* APRS_BEACON_SYMBOL - default "l", symbol for your beacon
+* APRS_BEACON_SYMBOL_TABLE - default "/", symbol table for your beacon
+* APRS_BEACON_COMMENT - Optional comment to send with the beacon

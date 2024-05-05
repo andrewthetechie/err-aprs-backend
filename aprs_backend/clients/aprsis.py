@@ -121,17 +121,19 @@ class APRSISClient:
         self.connected = False
         self._log.info("Disconnected")
 
-    async def _send(self, packet: str, encoding: str = "utf-8") -> None:
+    async def _send(self, packet: str, encoding: str = "utf-8") -> bool:
         self._log.debug("Sending '%s'", packet)
         packet = packet.rstrip("\r\n") + "\r\n"
         if packet is None:
             self._log.error("Packet is None - %s - Dropping", packet)
-            return
+            return False
         if self._writer is not None:
             self._writer.write(packet.encode(encoding))
             await self._writer.drain()
+            return True
         else:
-            self._log.error("Disconnected, unable to send packet %s, dropped", packet)
+            # disconnected, not able to send packet yet
+            return False
 
     async def _send_keepalive(self) -> bool:
         """
