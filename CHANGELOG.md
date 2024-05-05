@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.4.0](https://github.com/andrewthetechie/err-aprs-backend/compare/v0.3.0...v0.4.0) (2024-05-05)
+
+
+### Features
+
+* add additional config to the dockerfile ([#71](https://github.com/andrewthetechie/err-aprs-backend/issues/71)) ([3fe60b8](https://github.com/andrewthetechie/err-aprs-backend/commit/3fe60b8309b5fee0015f557c2109cae76e6a56aa))
+* beaconing ([#73](https://github.com/andrewthetechie/err-aprs-backend/issues/73)) ([3bd41fd](https://github.com/andrewthetechie/err-aprs-backend/commit/3bd41fd5122cf3c5c28fee5687ebcbb10282a774))
+
+
+### Bug Fixes
+
+* acks, login, filters, and APRS_BOT_CALLSIGN ([#72](https://github.com/andrewthetechie/err-aprs-backend/issues/72)) ([4d06705](https://github.com/andrewthetechie/err-aprs-backend/commit/4d06705b9a9e5f1a43bc4f89e1172125f4520b65))
+
+
+### Dependencies
+
+* bump dataclasses-json from 0.6.4 to 0.6.5 ([#69](https://github.com/andrewthetechie/err-aprs-backend/issues/69)) ([cfdd3df](https://github.com/andrewthetechie/err-aprs-backend/commit/cfdd3df55a9c0a9140c64a0ba664b14b5497085a))
+* bump pytest-xdist from 3.5.0 to 3.6.1 ([#66](https://github.com/andrewthetechie/err-aprs-backend/issues/66)) ([c5937f8](https://github.com/andrewthetechie/err-aprs-backend/commit/c5937f82f8281623271e69f5d31979b60c3a4e0f))
+
 ## [0.3.0](https://github.com/andrewthetechie/err-aprs-backend/compare/v0.2.0...v0.3.0) (2024-04-28)
 
 
