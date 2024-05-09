@@ -1,6 +1,7 @@
 [Core]
 Name = APRS
 Module = aprs
+Backend = True
 
 [Documentation]
 Description = Backend for APRS
