@@ -7,6 +7,7 @@ from aprs_backend.room import APRSRoom
 from aprs_backend.version import __version__ as ERR_APRS_VERSION
 from errbot.backends.base import Message
 from errbot.backends.base import ONLINE
+from errbot.plugin_manager import BotPluginManager
 from errbot.core import ErrBot
 from aprs_backend.exceptions import ProcessorError, PacketParseError, APRSISConnnectError
 from aprs_backend.packets.parser import parse, hash_packet
@@ -16,12 +17,16 @@ from aprs_backend.packets import AckPacket, RejectPacket, MessagePacket, BeaconP
 from aprs_backend.utils.counter import MessageCounter
 from random import randint
 from datetime import datetime
+
 from better_profanity import profanity
 from aprs_backend.clients.aprs_registry import APRSRegistryClient, RegistryAppConfig
 import logging
 import asyncio
 from errbot.version import VERSION as ERR_VERSION
 from aprs_backend.clients.beacon import BeaconConfig, BeaconClient
+from aprs_backend.utils.plugins import _load_plugins_generic, activate_non_started_plugins
+from types import MethodType
+
 
 log = logging.getLogger(__name__)
 
@@ -33,9 +38,9 @@ for handler in log.handlers:
 
 class APRSBackend(ErrBot):
     def __init__(self, config):
-        log.debug("Initied")
+        super().__init__(config)
+        log.debug("Init called")
 
-        self._errbot_config = config
         self._multiline = False
 
         aprs_config = {"host": "rotate.aprs.net", "port": 14580}
@@ -63,9 +68,6 @@ class APRSBackend(ErrBot):
         self._client = APRSISClient(**aprs_config, logger=log)
         self._send_queue: asyncio.Queue[MessagePacket] = asyncio.Queue(
             maxsize=int(self._get_from_config("APRS_SEND_MAX_QUEUE", "2048"))
-        )
-        self.help_text = self._get_from_config(
-            "APRS_HELP_TEXT", f"Errbot {ERR_VERSION} & err-aprs-backend {ERR_APRS_VERSION} by {aprs_config['callsign']}"
         )
 
         self._message_counter = MessageCounter(initial_value=randint(1, 20))  # nosec not used cryptographically
@@ -125,10 +127,23 @@ class APRSBackend(ErrBot):
             )
         else:
             self.beacon_client = None
-        super().__init__(config)
+
+    def attach_plugin_manager(self, plugin_manager: BotPluginManager | None) -> None:
+        """Modified attach_plugin_manager that patches the plugin manager
+
+        _log_plugins_generic is modified to remove a check on multiple plugin classes in
+        a single module
+        """
+        log.debug("In aprs-backend attach_plugin_manager")
+        if plugin_manager is not None:
+            log.debug("Patching plugin manager with custom _load_plugins_generic")
+            funcType = MethodType
+            plugin_manager._load_plugins_generic = funcType(_load_plugins_generic, plugin_manager)
+            plugin_manager.activate_non_started_plugins = funcType(activate_non_started_plugins, plugin_manager)
+        self.plugin_manager = plugin_manager
 
     def _get_from_config(self, key: str, default: any = None) -> any:
-        return getattr(self._errbot_config, key, default)
+        return getattr(self.bot_config, key, default)
 
     def _get_beacon_config(self) -> BeaconConfig | None:
         if self._get_from_config("APRS_BEACON_ENABLE", "false") == "true":
@@ -317,6 +332,13 @@ class APRSBackend(ErrBot):
             return False
 
     async def async_serve_once(self) -> bool:
+        """The async portion of serve once
+
+        Starts the bot tasks for receiving aprs messages, sending messages, and retrying
+        """
+        log.debug(
+            "Bot plugins: %s", [plugin.__class__.__name__ for plugin in self.plugin_manager.get_all_active_plugins()]
+        )
         receive_task = asyncio.create_task(self.receive_worker())
 
         worker_tasks = [asyncio.create_task(self.send_worker()), asyncio.create_task(self.retry_worker())]
@@ -426,13 +448,6 @@ class APRSBackend(ErrBot):
         else:
             log.debug("Dropped Packet from waiting_ack: %s", packet)
 
-    def handle_help(self, msg: APRSMessage) -> None:
-        """Returns simplified help text for the APRS backend"""
-        help_msg = APRSMessage(body=self.help_text, extras=msg.extras)
-        help_msg.to = msg.frm
-        help_msg.frm = self.bot_identifier
-        self.send_message(help_msg)
-
     async def _process_message(self, packet: MessagePacket) -> None:
         """
         Check if this message is a dupe of one the bot is already processing
@@ -449,8 +464,6 @@ class APRSBackend(ErrBot):
             self._packet_cache[this_packet_hash] = packet
         msg = APRSMessage.from_message_packet(packet)
         msg.body = msg.body.strip("\n").strip("\r")
-        if msg.body.lower().strip(" ") == "help":
-            return self.handle_help(msg)
         return self.callback_message(msg)
 
     async def _ack_message(self, packet: MessagePacket) -> None:

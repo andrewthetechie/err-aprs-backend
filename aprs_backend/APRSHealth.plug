@@ -1,0 +1,13 @@
+[Core]
+Name = APRSHealth
+Module = aprs_core_plugins
+Core = True
+
+[Documentation]
+Description = APRS Friendly Health Plugin
+
+[Python]
+Version = 3
+
+[Errbot]
+Min=6.2.0

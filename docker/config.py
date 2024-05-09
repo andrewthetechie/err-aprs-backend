@@ -61,11 +61,7 @@ SUPPRESS_CMD_NOT_FOUND = True
 
 # core plugins are not APRS optimized, only load ones that work
 # this causes some erros in the logs
-CORE_PLUGINS = (
-    "ACLs",
-    "CommandNotFoundFilter",
-    "VersionCheck" "Webserver",
-)
+CORE_PLUGINS = ("ACLs", "CommandNotFoundFilter", "VersionCheck", "APRSHelp", "APRSWebserver", "APRSHealth")
 
 for env_var, value in os.environ.items():
     if env_var.startswith("ERR_APRS_"):
