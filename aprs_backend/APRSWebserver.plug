@@ -1,0 +1,13 @@
+[Core]
+Name = APRSWebserver
+Module = aprs_core_plugins
+Core = True
+
+[Documentation]
+Description = APRS Friendly Web Plugin
+
+[Python]
+Version = 3
+
+[Errbot]
+Min=6.2.0

@@ -4,3 +4,9 @@ Module = aprs
 
 [Documentation]
 Description = Backend for APRS
+
+[Python]
+Version = 3
+
+[Errbot]
+Min=6.2.0
