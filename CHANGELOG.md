@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/andrewthetechie/err-aprs-backend/compare/v0.4.0...v0.5.0) (2024-05-09)
+
+
+### Features
+
+* new core plugins ([#79](https://github.com/andrewthetechie/err-aprs-backend/issues/79)) ([70a61f4](https://github.com/andrewthetechie/err-aprs-backend/commit/70a61f44a5e6684a60f592bc7b1bbad4f45fcc71))
+
+
+### Dependencies
+
+* bump ruff from 0.4.2 to 0.4.3 ([#74](https://github.com/andrewthetechie/err-aprs-backend/issues/74)) ([4fe028a](https://github.com/andrewthetechie/err-aprs-backend/commit/4fe028a78c840c89c359f2814fbfa093f61e286e))
+
 ## [0.4.0](https://github.com/andrewthetechie/err-aprs-backend/compare/v0.3.0...v0.4.0) (2024-05-05)
 
 
