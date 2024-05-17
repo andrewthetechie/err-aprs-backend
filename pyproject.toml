@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "err-aprs-backend"
-version = "0.5.0"
+version = "0.5.1"
 description = "Errbot APRS backend plugin"
 authors = ["Andrew Herrington <andrew.the.techie@gmail.com>"]
 license = "MIT"
