@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.1](https://github.com/andrewthetechie/err-aprs-backend/compare/v0.5.0...v0.5.1) (2024-05-17)
+
+
+### Dependencies
+
+* bump dataclasses-json from 0.6.5 to 0.6.6 ([#82](https://github.com/andrewthetechie/err-aprs-backend/issues/82)) ([45741b5](https://github.com/andrewthetechie/err-aprs-backend/commit/45741b50ac5bd7b416baa2591178e469c8c52a67))
+* bump pep8-naming from 0.13.3 to 0.14.0 ([#86](https://github.com/andrewthetechie/err-aprs-backend/issues/86)) ([485e5cb](https://github.com/andrewthetechie/err-aprs-backend/commit/485e5cbd53394b71795ba9a110d3343d4754c225))
+* bump pre-commit from 3.7.0 to 3.7.1 ([#83](https://github.com/andrewthetechie/err-aprs-backend/issues/83)) ([8c882c2](https://github.com/andrewthetechie/err-aprs-backend/commit/8c882c2a9a89c482f4e1da769f0be7c15668dd8c))
+* bump ruff from 0.4.3 to 0.4.4 ([#80](https://github.com/andrewthetechie/err-aprs-backend/issues/80)) ([b5b59a7](https://github.com/andrewthetechie/err-aprs-backend/commit/b5b59a78493f2a6dd451af95cdbeca74417e30bb))
+
 ## [0.5.0](https://github.com/andrewthetechie/err-aprs-backend/compare/v0.4.0...v0.5.0) (2024-05-09)
 
 
