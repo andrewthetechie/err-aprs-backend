@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.5.2](https://github.com/andrewthetechie/err-aprs-backend/compare/v0.5.1...v0.5.2) (2024-08-09)
+
+
+### Dependencies
+
+* bump bandit from 1.7.8 to 1.7.9 ([#103](https://github.com/andrewthetechie/err-aprs-backend/issues/103)) ([73b0448](https://github.com/andrewthetechie/err-aprs-backend/commit/73b0448df79a21e9ccac6bb0906c5bcc3c5af432))
+* bump certifi from 2024.2.2 to 2024.7.4 in the pip group ([#115](https://github.com/andrewthetechie/err-aprs-backend/issues/115)) ([6b34ae4](https://github.com/andrewthetechie/err-aprs-backend/commit/6b34ae4f28ad6574a25d93ea15b48b32db4ff256))
+* bump coverage from 7.5.1 to 7.5.2 ([#93](https://github.com/andrewthetechie/err-aprs-backend/issues/93)) ([be5afc3](https://github.com/andrewthetechie/err-aprs-backend/commit/be5afc38aa13c0b29294ca17f8b727e417ba6a58))
+* bump coverage from 7.5.2 to 7.5.3 ([#96](https://github.com/andrewthetechie/err-aprs-backend/issues/96)) ([32df3b3](https://github.com/andrewthetechie/err-aprs-backend/commit/32df3b3b799febbafc90ce7aeb56d83b1f30632b))
+* bump coverage from 7.5.3 to 7.5.4 ([#111](https://github.com/andrewthetechie/err-aprs-backend/issues/111)) ([41759b4](https://github.com/andrewthetechie/err-aprs-backend/commit/41759b47a6a485c2312ff4f60aef91109c25638d))
+* bump coverage from 7.5.4 to 7.6.0 ([#122](https://github.com/andrewthetechie/err-aprs-backend/issues/122)) ([09a07f8](https://github.com/andrewthetechie/err-aprs-backend/commit/09a07f883f6386842025d587086d65339cd72e03))
+* bump coverage from 7.6.0 to 7.6.1 ([#138](https://github.com/andrewthetechie/err-aprs-backend/issues/138)) ([e3d01fb](https://github.com/andrewthetechie/err-aprs-backend/commit/e3d01fb19f427683ec8d083d01a580881b309d68))
+* bump dataclasses-json from 0.6.6 to 0.6.7 ([#102](https://github.com/andrewthetechie/err-aprs-backend/issues/102)) ([57cecad](https://github.com/andrewthetechie/err-aprs-backend/commit/57cecad9b84fbad0d28c373718132001c4658099))
+* bump pep8-naming from 0.14.0 to 0.14.1 ([#88](https://github.com/andrewthetechie/err-aprs-backend/issues/88)) ([48c8cbb](https://github.com/andrewthetechie/err-aprs-backend/commit/48c8cbb22b3a8261948c84c1bc94082e4824d2f1))
+* bump pre-commit from 3.7.1 to 3.8.0 ([#134](https://github.com/andrewthetechie/err-aprs-backend/issues/134)) ([a0697c2](https://github.com/andrewthetechie/err-aprs-backend/commit/a0697c2a41feed9bbfbc137a64ca8a0a15489f37))
+* bump pytest from 8.2.0 to 8.2.1 ([#87](https://github.com/andrewthetechie/err-aprs-backend/issues/87)) ([3d194eb](https://github.com/andrewthetechie/err-aprs-backend/commit/3d194ebf732318ae99f75312d0aa8af1624857ad))
+* bump pytest from 8.2.1 to 8.2.2 ([#99](https://github.com/andrewthetechie/err-aprs-backend/issues/99)) ([2c33cce](https://github.com/andrewthetechie/err-aprs-backend/commit/2c33cceab1c83342c1f423074e9adf27855f5528))
+* bump pytest from 8.2.2 to 8.3.1 ([#128](https://github.com/andrewthetechie/err-aprs-backend/issues/128)) ([cee567b](https://github.com/andrewthetechie/err-aprs-backend/commit/cee567bf0539a30cf9a1f966cfb2f663f673640d))
+* bump pytest from 8.3.1 to 8.3.2 ([#132](https://github.com/andrewthetechie/err-aprs-backend/issues/132)) ([6473c41](https://github.com/andrewthetechie/err-aprs-backend/commit/6473c41f0566c62607d21bee964eb507f2e7fc0c))
+* bump pytest-asyncio from 0.23.6 to 0.23.7 ([#89](https://github.com/andrewthetechie/err-aprs-backend/issues/89)) ([fe88306](https://github.com/andrewthetechie/err-aprs-backend/commit/fe883066b5861e2c5579154eb368eb91976da6b0))
+* bump pytest-asyncio from 0.23.7 to 0.23.8 ([#126](https://github.com/andrewthetechie/err-aprs-backend/issues/126)) ([356cf98](https://github.com/andrewthetechie/err-aprs-backend/commit/356cf98ae7b32c491da2a902f9d13620e04cf530))
+* bump pytest-subtests from 0.12.1 to 0.13.0 ([#118](https://github.com/andrewthetechie/err-aprs-backend/issues/118)) ([62fa3eb](https://github.com/andrewthetechie/err-aprs-backend/commit/62fa3eba1989ba24050cc122698d70206e9d011c))
+* bump pytest-subtests from 0.13.0 to 0.13.1 ([#125](https://github.com/andrewthetechie/err-aprs-backend/issues/125)) ([dbcc2fa](https://github.com/andrewthetechie/err-aprs-backend/commit/dbcc2fa53d826c03d37c3ef2f7221b320e1f7a19))
+* bump pyupgrade from 3.15.2 to 3.16.0 ([#101](https://github.com/andrewthetechie/err-aprs-backend/issues/101)) ([b5babbd](https://github.com/andrewthetechie/err-aprs-backend/commit/b5babbd92e3d9abf25474c9f1e1400a5ed6de47a))
+* bump pyupgrade from 3.16.0 to 3.17.0 ([#135](https://github.com/andrewthetechie/err-aprs-backend/issues/135)) ([58c9c6a](https://github.com/andrewthetechie/err-aprs-backend/commit/58c9c6abf8de8078b1ebc54be03addfe32a629fb))
+* bump reorder-python-imports from 3.12.0 to 3.13.0 ([#98](https://github.com/andrewthetechie/err-aprs-backend/issues/98)) ([2c007c3](https://github.com/andrewthetechie/err-aprs-backend/commit/2c007c3b5dd660cbd57c232ebf7c3b008fe7bf54))
+* bump ruff from 0.4.10 to 0.5.0 ([#114](https://github.com/andrewthetechie/err-aprs-backend/issues/114)) ([d7971c0](https://github.com/andrewthetechie/err-aprs-backend/commit/d7971c0f09158db5a9450c2879c7208f83ac9acc))
+* bump ruff from 0.4.4 to 0.4.5 ([#92](https://github.com/andrewthetechie/err-aprs-backend/issues/92)) ([5554a60](https://github.com/andrewthetechie/err-aprs-backend/commit/5554a602001eab96a18b6e713f0a4ca68461f7c4))
+* bump ruff from 0.4.5 to 0.4.6 ([#95](https://github.com/andrewthetechie/err-aprs-backend/issues/95)) ([7856448](https://github.com/andrewthetechie/err-aprs-backend/commit/785644898ed34cdb885b3c1303eddec0a69b3a3a))
+* bump ruff from 0.4.6 to 0.4.7 ([#97](https://github.com/andrewthetechie/err-aprs-backend/issues/97)) ([d4708e7](https://github.com/andrewthetechie/err-aprs-backend/commit/d4708e7545d22d004be9fff7a547c6be46f242d2))
+* bump ruff from 0.4.7 to 0.4.8 ([#100](https://github.com/andrewthetechie/err-aprs-backend/issues/100)) ([2589687](https://github.com/andrewthetechie/err-aprs-backend/commit/2589687b82edccc8d828919084b4ac78ba380e83))
+* bump ruff from 0.4.8 to 0.4.9 ([#106](https://github.com/andrewthetechie/err-aprs-backend/issues/106)) ([01d28df](https://github.com/andrewthetechie/err-aprs-backend/commit/01d28df2b727633d015d7c67a669ef627bcfda18))
+* bump ruff from 0.4.9 to 0.4.10 ([#110](https://github.com/andrewthetechie/err-aprs-backend/issues/110)) ([0e41365](https://github.com/andrewthetechie/err-aprs-backend/commit/0e413650a52575c74ed536785eb57bbc6e9f637c))
+* bump ruff from 0.5.0 to 0.5.1 ([#117](https://github.com/andrewthetechie/err-aprs-backend/issues/117)) ([f4853ee](https://github.com/andrewthetechie/err-aprs-backend/commit/f4853eeeb2893bfb755b312a7aa1fedbc03c0784))
+* bump ruff from 0.5.1 to 0.5.2 ([#123](https://github.com/andrewthetechie/err-aprs-backend/issues/123)) ([1ec5671](https://github.com/andrewthetechie/err-aprs-backend/commit/1ec56713ecab567f7aff1ecc0d0b83897f133876))
+* bump ruff from 0.5.2 to 0.5.3 ([#127](https://github.com/andrewthetechie/err-aprs-backend/issues/127)) ([e6b14cc](https://github.com/andrewthetechie/err-aprs-backend/commit/e6b14cc96b1cb5d627937bcc6727268a3e888a8b))
+* bump ruff from 0.5.3 to 0.5.4 ([#129](https://github.com/andrewthetechie/err-aprs-backend/issues/129)) ([a83408d](https://github.com/andrewthetechie/err-aprs-backend/commit/a83408ddc859e07a10ccd1c75bf520e3d29ef7b2))
+* bump ruff from 0.5.4 to 0.5.5 ([#131](https://github.com/andrewthetechie/err-aprs-backend/issues/131)) ([3b07a4e](https://github.com/andrewthetechie/err-aprs-backend/commit/3b07a4e27f68c4cb997a3b64cf767cbd6288258c))
+* bump ruff from 0.5.5 to 0.5.6 ([#137](https://github.com/andrewthetechie/err-aprs-backend/issues/137)) ([131f534](https://github.com/andrewthetechie/err-aprs-backend/commit/131f5348f0640c38ba83d0e5bd218a444c582269))
+* bump ruff from 0.5.6 to 0.5.7 ([#140](https://github.com/andrewthetechie/err-aprs-backend/issues/140)) ([1dc7fd4](https://github.com/andrewthetechie/err-aprs-backend/commit/1dc7fd4f524b1e87c87276ba0a0a9faf5ed60fe5))
+* bump setuptools from 69.5.1 to 70.0.0 in the pip group ([#124](https://github.com/andrewthetechie/err-aprs-backend/issues/124)) ([84d3362](https://github.com/andrewthetechie/err-aprs-backend/commit/84d3362742e4a09b4fef3f44d1450e5989877a1d))
+
 ## [0.5.1](https://github.com/andrewthetechie/err-aprs-backend/compare/v0.5.0...v0.5.1) (2024-05-17)
 
 
