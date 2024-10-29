@@ -665,13 +665,13 @@ testing = ["fields", "hunter", "process-tests", "pytest-xdist", "virtualenv"]
 
 [[package]]
 name = "pytest-httpx"
-version = "0.32.0"
+version = "0.33.0"
 description = "Send responses to httpx."
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "pytest_httpx-0.32.0-py3-none-any.whl", hash = "sha256:685d93ce5e5edb5e52310b72342cdc190bebf83aab058328943dd8bd8f6ac790"},
-    {file = "pytest_httpx-0.32.0.tar.gz", hash = "sha256:7807647e8254e5cff79bf2041ae272449ce915d3cf1bbecaa581c384163adb87"},
+    {file = "pytest_httpx-0.33.0-py3-none-any.whl", hash = "sha256:bdd1b00a846cfe857194e4d3ba72dc08ba0d163154a4404269c9b971f357c05d"},
+    {file = "pytest_httpx-0.33.0.tar.gz", hash = "sha256:4af9ab0dae5e9c14cb1e27d18af3db1f627b2cf3b11c02b34ddf26aff6b0a24c"},
 ]
 
 [package.dependencies]
@@ -1026,4 +1026,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "e47d508224af49c2b55a33c00f8c41d5dc906ed5372c59a669b4724a581a7ead"
+content-hash = "286d6bb6d7a7a8f3839606727f09bb04a53cc1c0b71fe5de55ca3957aa086d09"
