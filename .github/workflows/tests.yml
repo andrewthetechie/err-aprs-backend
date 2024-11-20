@@ -84,7 +84,7 @@ jobs:
           path: ./
       - run: ls -R
       - name: Upload coverage report
-        uses: codecov/codecov-action@v5.0.2
+        uses: codecov/codecov-action@v5.0.4
         with:
           files: .coverage.xml
           verbose: true
