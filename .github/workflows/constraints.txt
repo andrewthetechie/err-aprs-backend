@@ -3,5 +3,5 @@ nox==2024.10.9
 nox-poetry==1.2.0
 poetry==1.8.5
 virtualenv==20.29.3
-poetry-dynamic-versioning==1.8.1
+poetry-dynamic-versioning==1.8.2
 toml==0.10.2
