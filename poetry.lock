@@ -883,14 +883,14 @@ files = [
 
 [[package]]
 name = "reorder-python-imports"
-version = "3.15.0"
+version = "3.16.0"
 description = "Tool for reordering python imports"
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "reorder_python_imports-3.15.0-py2.py3-none-any.whl", hash = "sha256:a0ab5c9824b0116a2a9197f10d09829942ab52a4db233a2544cd10a7647c2e37"},
-    {file = "reorder_python_imports-3.15.0.tar.gz", hash = "sha256:c9a5d6027213a0b76ba42f13d16224de98cfe100b9f959e617c5a1576360fb90"},
+    {file = "reorder_python_imports-3.16.0-py2.py3-none-any.whl", hash = "sha256:9ed8f0ca684d147c1f074286c61effee5c4be3d0dd9ee6ec172307bbba0c09d8"},
+    {file = "reorder_python_imports-3.16.0.tar.gz", hash = "sha256:bcc4e5e467a8833ec187e35f84f1a3e442881b3c62c265ece87677100473db43"},
 ]
 
 [package.dependencies]
