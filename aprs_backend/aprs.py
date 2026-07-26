@@ -65,6 +65,7 @@ class APRSBackend(ErrBot):
             # bot is using a different callsign from the signin, add it to the filter
             aprs_config["aprs_filter"] = f"g/{aprs_config['callsign']}/{self.callsign}"
             self.listening_callsigns.append(self.callsign)
+        aprs_config["connect_timeout"] = float(self._get_from_config("APRS_CONNECT_TIMEOUT", "30.0"))
         self._client = APRSISClient(**aprs_config, logger=log)
         self._send_queue: asyncio.Queue[MessagePacket] = asyncio.Queue(
             maxsize=int(self._get_from_config("APRS_SEND_MAX_QUEUE", "2048"))

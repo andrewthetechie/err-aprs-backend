@@ -24,6 +24,7 @@ class APRSISClient:
         app_version: str = "",
         logger: logging.Logger | None = None,
         keepalive_seconds: int = 120,
+        connect_timeout: float = 30.0,
     ):
         self.callsign = callsign
         self.password = password
@@ -33,6 +34,7 @@ class APRSISClient:
         self._aprs_app_name = aprs_app_name
         self._app_version = app_version
         self._keepalive_seconds = keepalive_seconds
+        self._connect_timeout = connect_timeout
 
         self._log = logger if logger is not None else logging.getLogger(__name__)
 
@@ -94,7 +96,9 @@ class APRSISClient:
     async def connect(self) -> None:
         self.__connect_count += 1
         try:
-            self._reader, self._writer = await asyncio.open_connection(self.aprs_host, self.aprs_port)
+            self._reader, self._writer = await asyncio.wait_for(
+                asyncio.open_connection(self.aprs_host, self.aprs_port), timeout=self._connect_timeout
+            )
             # login to aprsis
             await self._send_login()
             self._last_successful_connect = time.perf_counter()
