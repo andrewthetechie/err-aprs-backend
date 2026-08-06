@@ -81,13 +81,11 @@ class APRSBackend(ErrBot):
         # a stray newline
         self._strip_newlines = str(self._get_from_config("APRS_STRIP_NEWLINES", "true")).lower() == "true"
 
-        # try to strip out "foul" language the FCC would not like. It is possible/probable an errbot bot response could
-        # go out over the airwaves. This is configurable, but probably should remain on.
         self._language_filter = str(self._get_from_config("APRS_LANGUAGE_FILTER", "true")).lower() == "true"
         if self._language_filter:
             profanity.load_censor_words(self._get_from_config("APRS_LANGUAGE_FILTER_EXTRA_WORDS", []))
 
-        self._max_age_cached_packets_seconds = int(self._get_from_config("APRS_MAX_AGE_CACHED_PACKETS_SECONDS", "3600"))
+        self._max_age_cached_packets_seconds = int(self._get_from_config("APRS_MAX_AGE_CACHED_PACKETS_SECONDS"))
         self._packet_cache = ExpiringDict(
             max_len=self._max_cached_packets, max_age_seconds=self._max_age_cached_packets_seconds
         )
