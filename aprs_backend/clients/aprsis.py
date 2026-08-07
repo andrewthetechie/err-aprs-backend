@@ -177,7 +177,7 @@ class APRSISClient:
             # Read packet string from socket
             packet_bytes = await self._reader.readline()
         except Exception as exc:
-            logging.error("Could not read packet: %s", exc)
+            self._log.error("Could not read packet: %s", exc)
             raise APRSISPacketError from exc
 
         if not packet_bytes:
