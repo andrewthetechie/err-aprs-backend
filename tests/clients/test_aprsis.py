@@ -232,5 +232,5 @@ async def test_login_read_timeout_raises_on_slow_server(mock_logger):
     client._writer.write = MagicMock()
     client._writer.drain = AsyncMock()
 
-    with pytest.raises(APRSISLoginError, match="Failed to login"):
+    with pytest.raises(APRSISLoginError, match="Timed out waiting for APRS-IS login response after 0.1s"):
         await client._send_login()
