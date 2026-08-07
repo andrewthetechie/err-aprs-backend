@@ -27,17 +27,23 @@ class RegistryAppConfig:
 
 class APRSRegistryClient(ClientBase):
     def __init__(
-        self, registry_url: str, app_config: RegistryAppConfig, log: Logger, frequency_seconds: int = 3600
+        self,
+        registry_url: str,
+        app_config: RegistryAppConfig,
+        log: Logger,
+        frequency_seconds: int = 3600,
+        timeout_seconds: float = 30.0,
     ) -> None:
         self.registry_url = registry_url
         self.app_config = app_config
+        self.timeout_seconds = timeout_seconds
         super().__init__(log=log, frequency_seconds=frequency_seconds)
 
     async def __process__(self) -> None:
         """Posts to the aprs registry url for each listening callsign for the bot
         Run as an asyncio task in __call__
         """
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout_seconds)) as client:
             for post_json in self.app_config.post_jsons:
                 self.log.debug("Posting %s to %s", post_json, self.registry_url)
                 try:
