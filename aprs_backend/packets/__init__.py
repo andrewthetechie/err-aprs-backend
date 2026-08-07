@@ -1,20 +1,60 @@
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
+from dataclasses_json.core import _ExtendedEncoder
 from aprs_backend.utils.counter import MessageCounter
 from aprs_backend.utils.position import latitude_to_ddm, longitude_to_ddm
 from aprs_backend.utils.datetime import init_timestamp
 from datetime import datetime, timezone
 from better_profanity import profanity
 from aprs_backend.version import __version__ as BACKEND_VERSION
+import json as _json
 
 
+def _patch_addresse_compat(cls):
+    """Patch a dataclass_json class to emit/accept the legacy ``addresse`` wire key.
+
+    The Python field is ``address`` (renamed in PRD #454) but the serialized
+    JSON key remains ``addresse`` for backwards compatibility with any
+    external or persisted consumers.  This must be applied after
+    ``@dataclass_json`` so that the decorator-generated methods are
+    overridden.
+    """
+    _orig_from_dict = cls.from_dict
+
+    def _to_json(self, *args, **kwargs):  # noqa: ARG002
+        d = self.to_dict()
+        if "address" in d:
+            d["addresse"] = d.pop("address")
+        return _json.dumps(d, cls=_ExtendedEncoder)
+
+    @classmethod
+    def _from_json(cls_inner, s, *args, **kwargs):  # noqa: ARG002
+        d = _json.loads(s)
+        if "addresse" in d:
+            d["address"] = d.pop("addresse")
+        return cls_inner.from_dict(d)
+
+    @classmethod
+    def _from_dict(cls_inner, kvs, *args, **kwargs):  # noqa: ARG002
+        d = dict(kvs)
+        if "addresse" in d:
+            d["address"] = d.pop("addresse")
+        return _orig_from_dict.__func__(cls_inner, d)
+
+    cls.to_json = _to_json
+    cls.from_json = _from_json
+    cls.from_dict = _from_dict
+    return cls
+
+
+@_patch_addresse_compat
 @dataclass_json
 @dataclass(unsafe_hash=True)
 class Packet:
     _type: str = field(default="Packet", hash=False)
     from_call: str | None = field(default=None)
     to_call: str | None = field(default=None)
-    addresse: str | None = field(default=None)
+    address: str | None = field(default=None)
     format: str | None = field(default=None)
     msgNo: str | None = field(default=None)  # noqa: N815
     packet_type: str | None = field(default=None)
@@ -35,7 +75,7 @@ class Packet:
 
     @property
     def to(self):
-        return self.addresse if self.addresse is not None else self.to_call
+        return self.address if self.address is not None else self.to_call
 
     @property
     def json(self):
@@ -55,7 +95,7 @@ class Packet:
     @property
     def key(self) -> str:
         """Build a key for finding this packet in a dict."""
-        return f"{self.from_call}:{self.addresse}:{self.msgNo}"
+        return f"{self.from_call}:{self.address}:{self.msgNo}"
 
     def update_timestamp(self) -> None:
         self.timestamp = init_timestamp()
@@ -115,6 +155,7 @@ class Packet:
         return repr
 
 
+@_patch_addresse_compat
 @dataclass_json
 @dataclass(unsafe_hash=True)
 class AckPacket(Packet):
@@ -124,6 +165,7 @@ class AckPacket(Packet):
         self.payload = f":{self.to_call: <9}:ack{self.msgNo}"
 
 
+@_patch_addresse_compat
 @dataclass_json
 @dataclass(unsafe_hash=True)
 class RejectPacket(Packet):
@@ -134,6 +176,7 @@ class RejectPacket(Packet):
         self.payload = f":{self.to_call: <9}:rej{self.msgNo}"
 
 
+@_patch_addresse_compat
 @dataclass_json
 @dataclass(unsafe_hash=True)
 class MessagePacket(Packet):

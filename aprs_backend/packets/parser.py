@@ -80,18 +80,27 @@ def parse(packet_str: str) -> AckPacket | RejectPacket | MessagePacket | None:
     raw_aprs_packet["is_new_ackrej"] = is_new_ackrej
     raw_aprs_packet["packet_type"] = get_packet_type(raw_aprs_packet)
 
+    # Normalize aprslib's legacy "addresse" key to "address" once, before
+    # dispatching to per-type branches.  Only clobber if "address" is not
+    # already present, preserving existing fallback semantics.
+    if "addresse" in raw_aprs_packet and "address" not in raw_aprs_packet:
+        raw_aprs_packet["address"] = raw_aprs_packet.pop("addresse")
+
     match raw_aprs_packet["packet_type"]:
         case "MESSAGE":
             packet = MessagePacket.from_dict(raw_aprs_packet)
             packet.from_call = from_callsign
+            packet.address = raw_aprs_packet.get("addresse", packet.address)
 
         case "ACK":
             packet = AckPacket.from_dict(raw_aprs_packet)
             packet.from_call = from_callsign
+            packet.address = raw_aprs_packet.get("addresse", packet.address)
 
         case "REJECT":
             packet = RejectPacket.from_dict(raw_aprs_packet)
             packet.from_call = from_callsign
+            packet.address = raw_aprs_packet.get("addresse", packet.address)
 
         case _:
             log.info("Packet is not a message, ack, or reject. Not parsing it")
@@ -253,7 +262,7 @@ def get_packet_type(packet: dict) -> str:
 
 
 @lru_cache(maxsize=256)
-def hash_packet(to: str | None, addresse: str | None, msg_no: str | None) -> str:
+def hash_packet(to: str | None, address: str | None, msg_no: str | None) -> str:
     """Return a deterministic SHA-256 hash for packet deduplication.
 
     Any ``None`` argument is normalized to the empty string before hashing.
@@ -263,7 +272,7 @@ def hash_packet(to: str | None, addresse: str | None, msg_no: str | None) -> str
     ``"-None"`` hash.
     """
     safe_to = to if to is not None else ""
-    safe_addresse = addresse if addresse is not None else ""
+    safe_address = address if address is not None else ""
     safe_msg_no = msg_no if msg_no is not None else ""
-    stations = tuple(sorted((safe_to, safe_addresse)))
+    stations = tuple(sorted((safe_to, safe_address)))
     return sha256((",".join(stations) + f"-{safe_msg_no}").encode()).hexdigest()

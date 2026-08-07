@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from aprs_backend.packets import MessagePacket
-from aprs_backend.packets.parser import hash_packet
+from aprs_backend.packets import AckPacket, MessagePacket, RejectPacket
+from aprs_backend.packets.parser import hash_packet, parse
 
 
 def _build_minimal_backend():
@@ -22,7 +22,7 @@ def _build_minimal_backend():
 
 
 def test_hash_is_deterministic():
-    """Same (to, addresse, msg_no) always produces the same hash."""
+    """Same (to, address, msg_no) always produces the same hash."""
     h1 = hash_packet("W1AW", "W2AW", "001")
     h2 = hash_packet("W1AW", "W2AW", "001")
     assert h1 == h2
@@ -30,7 +30,7 @@ def test_hash_is_deterministic():
 
 
 def test_hash_normalizes_station_order():
-    """Swapped to/addresse arguments produce the same hash (alphabetically sorted)."""
+    """Swapped to/address arguments produce the same hash (alphabetically sorted)."""
     h1 = hash_packet("W2AW", "W1AW", "001")
     h2 = hash_packet("W1AW", "W2AW", "001")
     assert h1 == h2
@@ -60,8 +60,8 @@ def test_hash_handles_none_to():
     assert len(h) == 64
 
 
-def test_hash_handles_none_addresse():
-    """None for 'addresse' is normalized to empty string (no TypeError)."""
+def test_hash_handles_none_address():
+    """None for 'address' is normalized to empty string (no TypeError)."""
     h = hash_packet("W1AW", None, "001")
     assert isinstance(h, str)
     assert len(h) == 64
@@ -93,20 +93,20 @@ def test_hash_none_inputs_are_distinct_from_non_none():
 
 @pytest.mark.asyncio
 async def test_process_message_dedup_skips_repeated_packet():
-    """The dedup path in _process_message skips a repeated packet (same to/addresse/msgNo)."""
+    """The dedup path in _process_message skips a repeated packet (same to/address/msgNo)."""
 
-    # Build two MessagePackets with identical (to, addresse, msgNo)
+    # Build two MessagePackets with identical (to, address, msgNo)
     packet1 = MessagePacket(
         from_call="W1AW",
         to_call="W2AW",
-        addresse="W2AW",
+        address="W2AW",
         msgNo="001",
         message_text="hello",
     )
     packet2 = MessagePacket(
         from_call="W1AW",
         to_call="W2AW",
-        addresse="W2AW",
+        address="W2AW",
         msgNo="001",
         message_text="hello again",
     )
@@ -114,14 +114,14 @@ async def test_process_message_dedup_skips_repeated_packet():
     packet3 = MessagePacket(
         from_call="W1AW",
         to_call="W2AW",
-        addresse="W2AW",
+        address="W2AW",
         msgNo="002",
         message_text="different message",
     )
 
     # Verify both packets produce the same hash
-    h1 = hash_packet(packet1.to, packet1.addresse, packet1.msgNo)
-    h2 = hash_packet(packet2.to, packet2.addresse, packet2.msgNo)
+    h1 = hash_packet(packet1.to, packet1.address, packet1.msgNo)
+    h2 = hash_packet(packet2.to, packet2.address, packet2.msgNo)
     assert h1 == h2
 
     backend = _build_minimal_backend()
@@ -159,7 +159,7 @@ async def test_dedup_hash_and_cache_isolation():
     packet_dup = MessagePacket(
         from_call="W1AW",
         to_call="W2AW",
-        addresse="W2AW",
+        address="W2AW",
         msgNo="001",
         message_text="dup",
     )
@@ -167,13 +167,13 @@ async def test_dedup_hash_and_cache_isolation():
     packet_distinct = MessagePacket(
         from_call="W1AW",
         to_call="W2AW",
-        addresse="W2AW",
+        address="W2AW",
         msgNo="002",
         message_text="distinct",
     )
 
-    dup_hash = hash_packet(packet_dup.to, packet_dup.addresse, packet_dup.msgNo)
-    distinct_hash = hash_packet(packet_distinct.to, packet_distinct.addresse, packet_distinct.msgNo)
+    dup_hash = hash_packet(packet_dup.to, packet_dup.address, packet_dup.msgNo)
+    distinct_hash = hash_packet(packet_distinct.to, packet_distinct.address, packet_distinct.msgNo)
     assert dup_hash != distinct_hash
 
     # Simulate the dedup logic from _process_message lines 458-463:
@@ -190,3 +190,31 @@ async def test_dedup_hash_and_cache_isolation():
     async with backend._packet_cache_lock:
         assert backend._packet_cache.get(distinct_hash, None) is None
         backend._packet_cache[distinct_hash] = packet_distinct
+
+
+def test_parse_message_populates_address():
+    """Regression test: parse() maps aprslib's 'addresse' key onto packet.address
+    for MESSAGE packets. If this fixup is removed, address would be None."""
+    # 9-character addresse field required by aprslib (EMAIL-2 + 2 spaces)
+    packet = parse("DF1JSL-4>APL1,qAC,WIDE1-1::EMAIL-2  :Hello{12345")
+    assert packet is not None
+    assert isinstance(packet, MessagePacket)
+    assert packet.address == "EMAIL-2"
+
+
+def test_parse_ack_populates_address():
+    """Regression test: parse() maps aprslib's 'addresse' key onto packet.address
+    for ACK packets."""
+    packet = parse("DF1JSL-4>APL1,qAC,WIDE1-1::EMAIL-2  :ack12345")
+    assert packet is not None
+    assert isinstance(packet, AckPacket)
+    assert packet.address == "EMAIL-2"
+
+
+def test_parse_reject_populates_address():
+    """Regression test: parse() maps aprslib's 'addresse' key onto packet.address
+    for REJECT packets."""
+    packet = parse("DF1JSL-4>APL1,qAC,WIDE1-1::EMAIL-2  :rej12345")
+    assert packet is not None
+    assert isinstance(packet, RejectPacket)
+    assert packet.address == "EMAIL-2"
