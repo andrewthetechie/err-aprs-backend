@@ -104,9 +104,11 @@ def _run_one_cycle(backend):
 
 
 @pytest.mark.asyncio
-async def test_retry_worker_single_lock_acquisition_per_cycle(backend):
-    """retry_worker must acquire _waiting_ack_lock only once per cycle
-    when snapshotting entries (O(1) not O(N))."""
+async def test_retry_worker_single_snapshot_lock_per_cycle(backend):
+    """retry_worker takes the snapshot under a single lock hold (O(1)),
+    then does a lightweight per-entry liveness check (one short lock hold
+    per entry).  With one entry present, we expect 2 acquisitions:
+    1 for the snapshot + 1 for the liveness check."""
 
     instrumented = InstrumentedLock()
     backend._waiting_ack_lock = instrumented
@@ -125,7 +127,8 @@ async def test_retry_worker_single_lock_acquisition_per_cycle(backend):
         except asyncio.CancelledError:
             pass
 
-    assert instrumented.acquire_count == 1
+    # 1 snapshot acquisition + 1 liveness check for the single entry
+    assert instrumented.acquire_count == 2
 
 
 # ---------------------------------------------------------------------------
@@ -338,3 +341,76 @@ async def test_retry_worker_checks_max_retries_before_timing(backend):
     assert drop_called, "Entry over max retries should be dropped"
     assert not send_called, "Entry over max retries should NOT be resent (max-retries check first)"
     assert "REMOTE-1-1" not in backend._waiting_ack
+
+
+# ---------------------------------------------------------------------------
+# Test: freshness guard — ACKed mid-cycle entry is skipped
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_retry_worker_skips_ack_entry_removed_mid_cycle(backend):
+    """When a snapshot entry is ACKed/REJed between snapshot time and the
+    resend branch, retry_worker must NOT call send_message for it and must
+    NOT emit an error-level log for its drop."""
+
+    # Seed two entries: one that will be ACKed mid-cycle (entry 1) and one
+    # that stays (entry 2).  Both are overdue so they would normally resend.
+    for i in (1, 2):
+        pkt = _make_packet(msgno=i, last_send_attempt=1, last_send_time=datetime.now() - timedelta(seconds=200))
+        backend._waiting_ack[f"REMOTE-1-{i}"] = pkt
+
+    sent_packets = []
+
+    def track_send(msg):
+        # The packet is stored in the extras dict
+        sent_packets.append(msg.extras.get("packet"))
+
+    backend.send_message = MagicMock(side_effect=track_send)
+
+    original_drop = backend._APRSBackend__drop_message_from_waiting
+
+    async def tracked_drop(message_hash: str) -> None:
+        await original_drop(message_hash)
+
+    backend._APRSBackend__drop_message_from_waiting = tracked_drop
+
+    # Patch the per-entry sleep(0.001) so we can drop entry 2 between
+    # the processing of entry 1 and entry 2 in the snapshot iteration.
+    # Use a counter to know which iteration we're on.
+    sleep_call_count = 0
+    real_sleep = asyncio.sleep
+
+    async def patched_sleep_with_drop(delay):
+        nonlocal sleep_call_count
+        if delay == 0.001:
+            sleep_call_count += 1
+            # After the first entry has been processed (first sleep),
+            # drop the second entry from _waiting_ack to simulate
+            # a concurrent ACK arriving.
+            if sleep_call_count == 1:
+                await backend._APRSBackend__drop_message_from_waiting("REMOTE-1-2")
+        elif delay == 5:
+            # End of cycle — block until cancelled
+            await real_sleep(999999)
+        else:
+            await real_sleep(delay)
+
+    with patch("aprs_backend.aprs.asyncio.sleep", patched_sleep_with_drop), \
+         patch("aprs_backend.aprs.log") as mock_log:
+        task = asyncio.create_task(backend.retry_worker())
+        # Wait long enough for the cycle to complete
+        await real_sleep(0.1)
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+    # Entry 2 was removed mid-cycle, so it must NOT have been resent.
+    sent_keys = [p.addresse + "-" + p.msgNo for p in sent_packets if p is not None]
+    assert "REMOTE-1-2" not in sent_keys, \
+        "send_message must NOT be called for an entry ACKed mid-cycle"
+
+    # No error-level log should be emitted for the expected concurrent removal
+    mock_log.error.assert_not_called()

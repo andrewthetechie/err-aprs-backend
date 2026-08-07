@@ -205,28 +205,43 @@ class APRSBackend(ErrBot):
         log.warning(warning)
 
     async def retry_worker(self) -> None:
-        """Processes self._waiting_ack for messages we've sent that have not been acked
+        """Processes self._waiting_ack for messages we've sent that have not been acked.
+
+        A snapshot of _waiting_ack is taken under a single lock hold at the top of each
+        cycle.  Every snapshot entry is re-validated for liveness against the live dict
+        immediately before it is acted upon, because await points inside the loop let
+        _process_ack_rej or ExpiringDict cleanup remove entries mid-cycle.  Concurrently
+        removed entries are skipped (not resent, not dropped).
 
         Will resend a message up to APRS_MESSAGE_MAX_RETRIES number of tries while waiting
-        at least APRS_MESSAGE_RETRY_WAIT seconds between retries
+        at least APRS_MESSAGE_RETRY_WAIT seconds between retries.
         """
         log.debug("retry_worker started")
         while True:
             async with self._waiting_ack_lock:
                 current_items = list(self._waiting_ack.items())
             for key, this_packet in current_items:
-                # snapshot taken under lock; no reacquire needed
+                # Re-validate liveness against the live dict: entries may have been
+                # removed concurrently by _process_ack_rej or ExpiringDict cleanup
+                # while earlier keys were being processed (await points yield control).
+                # Skip any entry that is no longer present so we never resend an
+                # already-ACKed message or drop an already-absent entry.
+                async with self._waiting_ack_lock:
+                    live_packet = self._waiting_ack.get(key)
+                if live_packet is None:
+                    continue
+
                 # check max retries first, its cheaper than a timedelta
-                if this_packet.last_send_attempt > self._message_max_retry:
-                    log.debug("Packet %s over max retries, dropping %s", key, this_packet.json)
+                if live_packet.last_send_attempt > self._message_max_retry:
+                    log.debug("Packet %s over max retries, dropping %s", key, live_packet.json)
                     await self.__drop_message_from_waiting(key)
                     continue
 
                 # if this packet has not been sent in self._message_retry_wait seconds, resend it
                 # because it hasn't been ack'd yet
-                if (datetime.now() - this_packet.last_send_time).total_seconds() > self._message_retry_wait:
-                    log.debug("Message %s needs to be re-sent %s", key, this_packet.json)
-                    self.send_message(APRSMessage.from_message_packet(this_packet))
+                if (datetime.now() - live_packet.last_send_time).total_seconds() > self._message_retry_wait:
+                    log.debug("Message %s needs to be re-sent %s", key, live_packet.json)
+                    self.send_message(APRSMessage.from_message_packet(live_packet))
                 # release the loop for a bit
                 await asyncio.sleep(0.001)
             # release the loop for a bit longer after we've gone through all keys
