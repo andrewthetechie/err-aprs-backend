@@ -32,7 +32,12 @@ class BeaconConfig:
 
 class BeaconClient(ClientBase):
     def __init__(
-        self, beacon_config: BeaconConfig, send_queue: asyncio.Queue, log: Logger, frequency_seconds: int = 3600, chunk_seconds: int = 10
+        self,
+        beacon_config: BeaconConfig,
+        send_queue: asyncio.Queue,
+        log: Logger,
+        frequency_seconds: int = 3600,
+        chunk_seconds: int = 10,
     ) -> None:
         self.config: BeaconConfig = beacon_config
         self.send_queue = send_queue
