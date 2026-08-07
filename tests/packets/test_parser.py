@@ -1,5 +1,4 @@
 from aprs_backend.packets.parser import hash_packet
-import pytest
 
 
 def test_hash_is_deterministic():
