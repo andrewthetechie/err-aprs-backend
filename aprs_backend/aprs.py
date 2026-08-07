@@ -220,7 +220,7 @@ class APRSBackend(ErrBot):
         while True:
             async with self._waiting_ack_lock:
                 current_items = list(self._waiting_ack.items())
-            for key, this_packet in current_items:
+            for key, _ in current_items:
                 # Re-validate liveness against the live dict: entries may have been
                 # removed concurrently by _process_ack_rej or ExpiringDict cleanup
                 # while earlier keys were being processed (await points yield control).
