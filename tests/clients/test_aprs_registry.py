@@ -222,9 +222,7 @@ async def test_APRSRegistryClient_one_failure_does_not_cancel_others(mock_logger
     # All 3 posts should have been attempted despite one failure
     assert call_count == 3, f"Expected 3 POST attempts, got {call_count}"
     # Exactly one error log call for the single failed POST
-    assert mock_logger.error.call_count == 1, (
-        f"Expected 1 error call, got {mock_logger.error.call_count}"
-    )
+    assert mock_logger.error.call_count == 1, f"Expected 1 error call, got {mock_logger.error.call_count}"
     # Assert the single remaining ERROR message format from __process__
     error_call = mock_logger.error.call_args
     assert error_call[0][0] == "Registry POST failed for %s: %s"
