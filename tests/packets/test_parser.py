@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from aprs_backend.packets import MessagePacket
-from aprs_backend.packets.parser import hash_packet
+from aprs_backend.packets import AckPacket, MessagePacket, RejectPacket
+from aprs_backend.packets.parser import hash_packet, parse
 
 
 def _build_minimal_backend():
@@ -190,3 +190,31 @@ async def test_dedup_hash_and_cache_isolation():
     async with backend._packet_cache_lock:
         assert backend._packet_cache.get(distinct_hash, None) is None
         backend._packet_cache[distinct_hash] = packet_distinct
+
+
+def test_parse_message_populates_address():
+    """Regression test: parse() maps aprslib's 'addresse' key onto packet.address
+    for MESSAGE packets. If this fixup is removed, address would be None."""
+    # 9-character addresse field required by aprslib (EMAIL-2 + 2 spaces)
+    packet = parse("DF1JSL-4>APL1,qAC,WIDE1-1::EMAIL-2  :Hello{12345")
+    assert packet is not None
+    assert isinstance(packet, MessagePacket)
+    assert packet.address == "EMAIL-2"
+
+
+def test_parse_ack_populates_address():
+    """Regression test: parse() maps aprslib's 'addresse' key onto packet.address
+    for ACK packets."""
+    packet = parse("DF1JSL-4>APL1,qAC,WIDE1-1::EMAIL-2  :ack12345")
+    assert packet is not None
+    assert isinstance(packet, AckPacket)
+    assert packet.address == "EMAIL-2"
+
+
+def test_parse_reject_populates_address():
+    """Regression test: parse() maps aprslib's 'addresse' key onto packet.address
+    for REJECT packets."""
+    packet = parse("DF1JSL-4>APL1,qAC,WIDE1-1::EMAIL-2  :rej12345")
+    assert packet is not None
+    assert isinstance(packet, RejectPacket)
+    assert packet.address == "EMAIL-2"
