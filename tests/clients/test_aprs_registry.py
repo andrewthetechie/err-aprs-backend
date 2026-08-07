@@ -9,14 +9,14 @@ import httpx
 @pytest.fixture
 def registry_app_config():
     return RegistryAppConfig(
-        description="description", listening_callsigns=["TEST-1"], website="website", software="software"
+        description="description", listening_callsigns={"TEST-1"}, website="website", software="software"
     )
 
 
 parameters = [
-    ("testing", ["TEST-1"], "http://test.test", "testsoftware"),
-    ("testing", ["TEST-1", "TEST-2"], "http://test.test", "testsoftware"),
-    ("testing", ["TEST-1", "TEST-2", "EMLSRVR"], "https://test.test", "othersoftware"),
+    ("testing", {"TEST-1"}, "http://test.test", "testsoftware"),
+    ("testing", {"TEST-1", "TEST-2"}, "http://test.test", "testsoftware"),
+    ("testing", {"TEST-1", "TEST-2", "EMLSRVR"}, "https://test.test", "othersoftware"),
 ]
 
 
