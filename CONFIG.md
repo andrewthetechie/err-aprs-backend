@@ -33,6 +33,7 @@ BOT_IDENTITY = {
 * APRS_REGISTRY_DESCRIPTION - default "err-aprs-backend powered bot", description for your bot in the Service Regsitry
 * APRS_REGISTRY_WEBSTIRE - default "", website for your service on the APRS registry
 * APRS_REGISTRY_SOFTWARE - default "err-aprs-backend {version} errbot {errbot version}", software string for APRS service registry
+* APRS_REGISTRY_TIMEOUT_SECONDS - default "30.0", timeout in seconds for the httpx.AsyncClient used when posting to the APRS registry
 
 ## Beacon Config
 
