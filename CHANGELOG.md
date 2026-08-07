@@ -1,5 +1,25 @@
 # Changelog
 
+## Wire-format compatibility for ``address`` field (#542)
+
+PRD #454 renamed the Python field from ``addresse`` to ``address`` across the
+Packet class hierarchy.  A compatibility shim was added to preserve the legacy
+``addresse`` JSON key on the wire:
+
+- **Outbound** ``to_json()`` / ``.json`` always emits ``addresse``.
+- **Inbound** ``from_json()`` / ``from_dict()`` accepts both ``addresse`` and
+  ``address``.
+- Applied consistently to ``Packet``, ``AckPacket``, ``RejectPacket``, and
+  ``MessagePacket``.
+- Test coverage added in ``tests/packets/test_serialization.py``.
+
+Contract analysis: the ``.json`` property is used in-repo only as a debug-log
+argument (``aprs_backend/aprs.py``, ``aprs_backend/clients/beacon.py``).  No
+RPC server implementation exists in this repository.  The aprslib parse path
+in ``parser.py`` already hand-translates ``addresse`` to ``address``.  The shim
+ensures any external or persisted JSON consumers of the ``addresse`` key
+continue to work.
+
 ## [0.5.1](https://github.com/andrewthetechie/err-aprs-backend/compare/v0.5.0...v0.5.1) (2024-05-17)
 
 
