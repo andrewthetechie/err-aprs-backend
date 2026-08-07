@@ -1,4 +1,5 @@
 import importlib
+import os
 import sys
 
 
@@ -12,13 +13,13 @@ def _reload_config(monkeypatch, env_overrides=None):
     if "docker.config" in sys.modules:
         del sys.modules["docker.config"]
 
+    # Remove any ERR_APRS_* vars that could be exec'd
+    for k in [k for k in os.environ if k.startswith("ERR_APRS_")]:
+        monkeypatch.delenv(k, raising=False)
+
     # Stub required vars
     monkeypatch.setenv("APRS_CALLSIGN", "TEST123")
     monkeypatch.setenv("APRS_PASSWORD", "testpass")
-
-    # Remove any ERR_APRS_* vars that could be exec'd
-    for key in list(monkeypatch._setattr):
-        pass  # monkeypatch handles cleanup automatically
 
     # Apply optional overrides
     if env_overrides:
