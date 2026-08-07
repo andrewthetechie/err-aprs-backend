@@ -1,6 +1,7 @@
+import asyncio
+import hashlib
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import asyncio
 import pytest
 
 from aprs_backend.packets import MessagePacket
@@ -66,8 +67,7 @@ def test_hash_handles_all_none():
     assert isinstance(h, str)
     assert len(h) == 64
     # The pre-image is ",".join(("", "")) + "-" + "" = ",-"
-    import hashlib
-    expected = hashlib.sha256(",-".encode()).hexdigest()
+    expected = hashlib.sha256(b",-").hexdigest()
     assert h == expected
 
 
