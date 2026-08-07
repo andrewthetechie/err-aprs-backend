@@ -213,16 +213,9 @@ class APRSBackend(ErrBot):
         log.debug("retry_worker started")
         while True:
             async with self._waiting_ack_lock:
-                current_keys = self._waiting_ack.keys()
-            for key in current_keys:
-                async with self._waiting_ack_lock:
-                    this_packet = self._waiting_ack.get(key, None)
-
-                # packet will be none if this packet has expired or been ack'd or
-                # rejected in between us pulling keys and getting it
-                if this_packet is None:
-                    continue
-
+                current_items = list(self._waiting_ack.items())
+            for key, this_packet in current_items:
+                # snapshot taken under lock; no reacquire needed
                 # check max retries first, its cheaper than a timedelta
                 if this_packet.last_send_attempt > self._message_max_retry:
                     log.debug("Packet %s over max retries, dropping %s", key, this_packet.json)
