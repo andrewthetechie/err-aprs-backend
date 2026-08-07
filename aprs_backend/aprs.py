@@ -145,7 +145,7 @@ class APRSBackend(ErrBot):
         return getattr(self.bot_config, key, default)
 
     def _get_beacon_config(self) -> BeaconConfig | None:
-        if self._get_from_config("APRS_BEACON_ENABLE", "false") == "true":
+        if self._get_from_config("APRS_BEACON_ENABLE", "false") != "true":
             return None
         beacon_config = {}
         beacon_config["latitude"] = self._get_from_config("APRS_BEACON_LATITUDE", None)
