@@ -63,13 +63,9 @@ class APRSISClient:
         self._log.info("Sending login information")
         try:
             await self._send(self._aprs_login)
-            aprs_version = await asyncio.wait_for(
-                self._reader.readline(), timeout=self._login_read_timeout
-            )
+            aprs_version = await asyncio.wait_for(self._reader.readline(), timeout=self._login_read_timeout)
             aprs_version = aprs_version.decode("latin-1").rstrip()
-            aprs_login_test = await asyncio.wait_for(
-                self._reader.readline(), timeout=self._login_read_timeout
-            )
+            aprs_login_test = await asyncio.wait_for(self._reader.readline(), timeout=self._login_read_timeout)
             aprs_login_test = aprs_login_test.decode("latin-1").rstrip()
             self._log.debug("APRS server version Response %s", aprs_version)
             _, _, callsign, status, _, server = aprs_login_test.split(" ", 5)
