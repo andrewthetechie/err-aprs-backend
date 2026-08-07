@@ -9,5 +9,6 @@ def mock_logger():
             self.debug = MagicMock()
             self.error = MagicMock()
             self.info = MagicMock()
+            self.warning = MagicMock()
 
     return MockLogger()

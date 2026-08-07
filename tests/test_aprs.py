@@ -65,20 +65,6 @@ def backend(bot_config):
     return backend
 
 
-@pytest.fixture
-def mock_logger():
-    """Mock logger with warning method for APRSBackend tests."""
-
-    class MockLogger:
-        def __init__(self):
-            self.debug = MagicMock()
-            self.error = MagicMock()
-            self.info = MagicMock()
-            self.warning = MagicMock()
-
-    return MockLogger()
-
-
 def _make_packet(msgno: int = 1, last_send_attempt: int = 0, last_send_time: datetime | None = None):
     """Helper to create a MessagePacket for _waiting_ack."""
     pkt = MessagePacket(
@@ -435,26 +421,30 @@ async def test_retry_worker_skips_ack_entry_removed_mid_cycle(backend):
 
 
 @pytest.mark.asyncio
-async def test_receive_worker_handles_dead_connection(mock_logger):
+@pytest.mark.parametrize(
+    "error_message",
+    [
+        "Read timeout",
+        "Empty packet received. Probably missed keepalives",
+    ],
+    ids=["timeout", "empty_packet"],
+)
+async def test_receive_worker_handles_dead_connection(mock_logger, error_message):
     """receive_worker catches APRSISDeadConnectionError, calls disconnect(), logs at warning level, and returns False."""
 
     # Create a mock backend with the minimal attributes receive_worker needs
     backend = MagicMock(spec=[])
     backend._client = AsyncMock()
     backend._client.connect = AsyncMock()
-    backend._client.get_packet = AsyncMock(side_effect=APRSISDeadConnectionError("Read timeout"))
+    backend._client.get_packet = AsyncMock(side_effect=APRSISDeadConnectionError(error_message))
     backend._client.disconnect = AsyncMock()
     backend.listening_callsigns = ["TEST-1"]
     backend._dropped_packets = 0
     backend._max_dropped_packets = 25
     backend.process_packet = AsyncMock()
-    backend._get_from_config = MagicMock(return_value="false")
 
     # Bind the real receive_worker method to the mock
     with patch("aprs_backend.aprs.log", mock_logger):
-        from aprs_backend.aprs import APRSBackend
-
-        # Bind the actual method onto our mock object
         receive_worker_method = APRSBackend.receive_worker.__get__(backend, type(backend))
         result = await receive_worker_method()
 
@@ -471,37 +461,3 @@ async def test_receive_worker_handles_dead_connection(mock_logger):
     # Assert a warning was logged about the dead connection
     warning_calls = [call for call in mock_logger.warning.call_args_list if "Dead connection" in str(call)]
     assert len(warning_calls) == 1, f"Expected one warning about dead connection, got: {warning_calls}"
-
-
-@pytest.mark.asyncio
-async def test_receive_worker_dead_connection_empty_packet(mock_logger):
-    """receive_worker handles APRSISDeadConnectionError from empty packet source identically."""
-
-    backend = MagicMock(spec=[])
-    backend._client = AsyncMock()
-    backend._client.connect = AsyncMock()
-    backend._client.get_packet = AsyncMock(
-        side_effect=APRSISDeadConnectionError("Empty packet received. Probably missed keepalives")
-    )
-    backend._client.disconnect = AsyncMock()
-    backend.listening_callsigns = ["TEST-1"]
-    backend._dropped_packets = 0
-    backend._max_dropped_packets = 25
-    backend.process_packet = AsyncMock()
-
-    with patch("aprs_backend.aprs.log", mock_logger):
-        from aprs_backend.aprs import APRSBackend
-
-        receive_worker_method = APRSBackend.receive_worker.__get__(backend, type(backend))
-        result = await receive_worker_method()
-
-    assert result is False
-    backend._client.disconnect.assert_awaited_once()
-
-    fatal_calls = [
-        call for call in mock_logger.error.call_args_list if "Fatal unhandled error reading from APRS" in str(call)
-    ]
-    assert len(fatal_calls) == 0
-
-    warning_calls = [call for call in mock_logger.warning.call_args_list if "Dead connection" in str(call)]
-    assert len(warning_calls) == 1
