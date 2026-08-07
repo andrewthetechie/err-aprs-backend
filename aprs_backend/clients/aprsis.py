@@ -122,7 +122,7 @@ class APRSISClient:
             self._writer.close()
             try:
                 await self._writer.wait_closed()
-            except Exception:
+            except Exception:  # nosec B110
                 # writer may already be closed/invalid; still reset state below
                 pass
         self._writer = None
