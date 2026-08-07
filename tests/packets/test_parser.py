@@ -39,6 +39,45 @@ def test_different_inputs_produce_different_hashes():
     assert h1 != h2
 
 
+def test_hash_handles_none_to():
+    """None for 'to' is normalized to empty string (no TypeError)."""
+    h = hash_packet(None, "W2AW", "001")
+    assert isinstance(h, str)
+    assert len(h) == 64
+
+
+def test_hash_handles_none_addresse():
+    """None for 'addresse' is normalized to empty string (no TypeError)."""
+    h = hash_packet("W1AW", None, "001")
+    assert isinstance(h, str)
+    assert len(h) == 64
+
+
+def test_hash_handles_none_msg_no():
+    """None for 'msg_no' is normalized to empty string (no TypeError)."""
+    h = hash_packet("W1AW", "W2AW", None)
+    assert isinstance(h, str)
+    assert len(h) == 64
+
+
+def test_hash_handles_all_none():
+    """All-None inputs produce a defined hash instead of a degenerate '-None'."""
+    h = hash_packet(None, None, None)
+    assert isinstance(h, str)
+    assert len(h) == 64
+    # The pre-image is ",".join(("", "")) + "-" + "" = ",-"
+    import hashlib
+    expected = hashlib.sha256(",-".encode()).hexdigest()
+    assert h == expected
+
+
+def test_hash_none_inputs_are_distinct_from_non_none():
+    """A None field produces a different hash than the same call with a value."""
+    h_none = hash_packet(None, "W2AW", "001")
+    h_value = hash_packet("W1AW", "W2AW", "001")
+    assert h_none != h_value
+
+
 @pytest.mark.asyncio
 async def test_process_message_dedup_skips_repeated_packet():
     """The dedup path in _process_message skips a repeated packet (same to/addresse/msgNo)."""
