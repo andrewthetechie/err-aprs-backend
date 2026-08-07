@@ -90,14 +90,17 @@ def parse(packet_str: str) -> AckPacket | RejectPacket | MessagePacket | None:
         case "MESSAGE":
             packet = MessagePacket.from_dict(raw_aprs_packet)
             packet.from_call = from_callsign
+            packet.address = raw_aprs_packet.get("addresse", packet.address)
 
         case "ACK":
             packet = AckPacket.from_dict(raw_aprs_packet)
             packet.from_call = from_callsign
+            packet.address = raw_aprs_packet.get("addresse", packet.address)
 
         case "REJECT":
             packet = RejectPacket.from_dict(raw_aprs_packet)
             packet.from_call = from_callsign
+            packet.address = raw_aprs_packet.get("addresse", packet.address)
 
         case _:
             log.info("Packet is not a message, ack, or reject. Not parsing it")
