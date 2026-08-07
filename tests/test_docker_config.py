@@ -5,7 +5,6 @@ keys consumed by aprs_backend/aprs.py.
 """
 import importlib
 import sys
-import types
 import os
 from pathlib import Path
 
