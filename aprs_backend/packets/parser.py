@@ -215,7 +215,8 @@ def check_for_new_ackrej_format(message_text: str) -> tuple[str, str, bool]:
                 msg = matches[1].rstrip()
                 msgno = matches[2]
                 new_ackrej_format = True
-            except Exception:
+            except (IndexError, AttributeError):
+                log.debug("Failed to parse new ack/rej format from message_text=%r", message_text)
                 msg = message_text
                 msgno = None
                 new_ackrej_format = False
