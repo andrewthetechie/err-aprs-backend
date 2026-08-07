@@ -68,3 +68,30 @@ async def test_APRSRegistryClient_repeats_and_errors(httpx_mock, mock_logger, re
     await this_APRSRegistryClient.__process__()
     await this_APRSRegistryClient.__process__()
     assert mock_logger.error.called
+
+
+@pytest.mark.asyncio
+async def test_APRSRegistryClient_timeout_seconds_default(registry_app_config):
+    this_APRSRegistryClient = APRSRegistryClient(
+        registry_url="http://test.com", log=getLogger(__name__), app_config=registry_app_config
+    )
+    assert this_APRSRegistryClient.timeout_seconds == 30.0
+
+
+@pytest.mark.asyncio
+async def test_APRSRegistryClient_timeout_seconds_custom(registry_app_config):
+    this_APRSRegistryClient = APRSRegistryClient(
+        registry_url="http://test.com", log=getLogger(__name__), app_config=registry_app_config, timeout_seconds=15.0
+    )
+    assert this_APRSRegistryClient.timeout_seconds == 15.0
+
+
+@pytest.mark.asyncio
+async def test_APRSRegistryClient_timeout_handled(httpx_mock, mock_logger, registry_app_config):
+    httpx_mock.add_exception(httpx.ReadTimeout("Unable to read within timeout"))
+
+    this_APRSRegistryClient = APRSRegistryClient(
+        registry_url="http://test.com", log=mock_logger, app_config=registry_app_config, timeout_seconds=5.0
+    )
+    await this_APRSRegistryClient.__process__()
+    assert mock_logger.error.called

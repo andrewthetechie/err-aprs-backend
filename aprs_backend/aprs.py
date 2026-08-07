@@ -112,6 +112,7 @@ class APRSBackend(ErrBot):
                 log=log,
                 frequency_seconds=int(self._get_from_config("APRS_REGISTRY_FREQUENCY_SECONDS", "3600")),
                 app_config=self.registry_app_config,
+                timeout_seconds=float(self._get_from_config("APRS_REGISTRY_TIMEOUT_SECONDS", "30.0")),
             )
         else:
             self.registry_client = None
