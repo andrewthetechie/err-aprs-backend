@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 import httpx
 from functools import cached_property
@@ -44,24 +45,29 @@ class APRSRegistryClient(ClientBase):
         Run as an asyncio task in __call__
         """
         async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout_seconds)) as client:
-            for post_json in self.app_config.post_jsons:
-                self.log.debug("Posting %s to %s", post_json, self.registry_url)
-                try:
-                    response = await client.post(self.registry_url, json=post_json)
-                    self.log.debug(response)
-                    response.raise_for_status()
-                except httpx.RequestError as exc:
-                    self.log.error(
-                        "Request Error while posting %s to %s. Error: %s",
-                        post_json,
-                        self.registry_url,
-                        exc,
-                    )
-                except httpx.HTTPStatusError as exc:
-                    self.log.error(
-                        "Error while posting %s to %s. Error: %s, response: %s",
-                        post_json,
-                        self.registry_url,
-                        exc,
-                        response,
-                    )
+            results = await asyncio.gather(
+                *(self._post_and_log(client, post_json) for post_json in self.app_config.post_jsons),
+                return_exceptions=True,
+            )
+            for post_json, result in zip(self.app_config.post_jsons, results):
+                if isinstance(result, Exception):
+                    if isinstance(result, httpx.HTTPStatusError):
+                        self.log.error(
+                            "Registry POST failed for %s: %s, response: %s",
+                            post_json,
+                            result,
+                            result.response,
+                        )
+                    else:
+                        self.log.error(
+                            "Registry POST failed for %s: %s",
+                            post_json,
+                            result,
+                        )
+
+    async def _post_and_log(self, client: httpx.AsyncClient, post_json: dict) -> None:
+        """Send a single POST to the registry, log debug info, and raise on HTTP errors."""
+        self.log.debug("Posting %s to %s", post_json, self.registry_url)
+        response = await client.post(self.registry_url, json=post_json)
+        self.log.debug(response)
+        response.raise_for_status()
