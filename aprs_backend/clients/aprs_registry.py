@@ -46,10 +46,7 @@ class APRSRegistryClient(ClientBase):
         """
         async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout_seconds)) as client:
             results = await asyncio.gather(
-                *(
-                    self._post_and_log(client, post_json)
-                    for post_json in self.app_config.post_jsons
-                ),
+                *(self._post_and_log(client, post_json) for post_json in self.app_config.post_jsons),
                 return_exceptions=True,
             )
             for post_json, result in zip(self.app_config.post_jsons, results):
