@@ -1,4 +1,5 @@
 import asyncio
+import threading
 
 import pytest
 
@@ -91,3 +92,47 @@ async def test_concurrency_stress():
         if 2 <= v <= remainder + 1:
             expected += 1
         assert count == expected, f"Value {v} appeared {count} times, expected {expected}"
+
+
+@pytest.mark.asyncio
+async def test_cross_path_stress():
+    """Run sync get_value_sync() (dispatched via threads) and async get_value()
+    concurrently and assert all returned values stay within 1.._max and the
+    counter never exceeds _max."""
+    max_val = 999
+    counter = MessageCounter(initial_value=1, max_message_count=max_val)
+    num_per_path = 2500
+    results: list[int] = []
+    results_lock = threading.Lock()
+    errors: list[str] = []
+
+    def sync_worker():
+        for _ in range(num_per_path):
+            v = counter.get_value_sync()
+            with results_lock:
+                results.append(v)
+                if v < 1 or v > max_val:
+                    errors.append(f"Value {v} out of range 1-{max_val}")
+
+    async def async_worker():
+        for _ in range(num_per_path):
+            v = await counter.get_value()
+            with results_lock:
+                results.append(v)
+                if v < 1 or v > max_val:
+                    errors.append(f"Value {v} out of range 1-{max_val}")
+
+    # Launch sync workers via threads
+    sync_threads = [threading.Thread(target=sync_worker) for _ in range(4)]
+    for t in sync_threads:
+        t.start()
+
+    # Launch async workers concurrently on the event loop
+    await asyncio.gather(*(async_worker() for _ in range(4)))
+
+    # Wait for sync threads to finish
+    for t in sync_threads:
+        t.join()
+
+    assert not errors, f"Range violations detected: {errors[:10]}"
+    assert len(results) == num_per_path * 8, f"Expected {num_per_path * 8} results, got {len(results)}"
