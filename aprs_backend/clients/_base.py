@@ -3,9 +3,10 @@ from logging import Logger
 
 
 class ClientBase:
-    def __init__(self, log: Logger, frequency_seconds: int = 3600):
+    def __init__(self, log: Logger, frequency_seconds: int = 3600, chunk_seconds: int = 10):
         self.log = log
         self.frequency_seconds = frequency_seconds
+        self.chunk_seconds = chunk_seconds
 
     async def __process__(self):
         raise NotImplementedError("Not implemented")  # pragma: no cover
@@ -19,7 +20,7 @@ class ClientBase:
             while True:
                 await self.__process__()
                 # sleep in chunks for cancellability
-                chunk_seconds = min(10, self.frequency_seconds)
+                chunk_seconds = min(self.chunk_seconds, self.frequency_seconds)
                 remaining = self.frequency_seconds
                 while remaining > 0:
                     sleep_time = min(chunk_seconds, remaining)

@@ -5,9 +5,9 @@ import asyncio
 
 
 class ClientBaseForTest(ClientBase):
-    def __init__(self, log: Logger, frequency_seconds: int = 3600):
+    def __init__(self, log: Logger, frequency_seconds: int = 3600, chunk_seconds: int = 10):
         self.process_call_count = 0
-        super().__init__(log, frequency_seconds)
+        super().__init__(log, frequency_seconds, chunk_seconds)
 
     @property
     def process_called(self):
@@ -51,3 +51,16 @@ async def test_clientbase_cancellation_during_sleep(mock_logger):
     await task  # task returns cleanly after catching CancelledError
     cancel_elapsed = asyncio.get_event_loop().time() - cancel_start
     assert cancel_elapsed < 11  # cancellation resolved well within 1 chunk
+
+
+@pytest.mark.asyncio
+async def test_clientbase_configurable_chunk_seconds(mock_logger):
+    """Non-default chunk_seconds is respected by the sleep loop."""
+    client = ClientBaseForTest(log=mock_logger, frequency_seconds=3600, chunk_seconds=2)
+    task = asyncio.create_task(client())
+    await asyncio.sleep(2)  # let __process__ run, then sleep starts
+    cancel_start = asyncio.get_event_loop().time()
+    task.cancel()
+    await task  # task returns cleanly after catching CancelledError
+    cancel_elapsed = asyncio.get_event_loop().time() - cancel_start
+    assert cancel_elapsed < 4  # cancellation resolved within 1 custom chunk (2s)
