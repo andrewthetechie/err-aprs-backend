@@ -32,7 +32,7 @@ class _BotConfig:
     APRS_CONNECT_TIMEOUT = "30.0"
     APRS_SEND_MAX_QUEUE = "2048"
     APRS_MAX_DROPPED_PACKETS = "25"
-    APRS_MAX_CACHED_PACKETS = "2048"
+    APRS_MAX_CACHED_PACETS = "2048"
     APRS_MESSAGE_MAX_RETRIES = "7"
     APRS_MESSAGE_RETRY_WAIT = "90"
     APRS_STRIP_NEWLINES = "true"
@@ -78,6 +78,26 @@ def _make_packet(msgno: int = 1, last_send_attempt: int = 0, last_send_time: dat
     return pkt
 
 
+def _run_one_cycle(backend):
+    """Run retry_worker() for exactly one cycle by patching the trailing sleep(5)
+    to set an event and then sleep forever.  The caller waits for the event,
+    cancels the task, and swallows CancelledError."""
+    event = asyncio.Event()
+
+    original_sleep = asyncio.sleep
+
+    async def patched_sleep(delay):
+        if delay == 5:
+            # End of one cycle — signal and block so the worker stays
+            # paused here until the caller cancels it.
+            event.set()
+            await original_sleep(999999)
+        else:
+            await original_sleep(delay)
+
+    return event, patched_sleep
+
+
 # ---------------------------------------------------------------------------
 # Test: retry_worker acquires lock O(1) per cycle
 # ---------------------------------------------------------------------------
@@ -94,24 +114,16 @@ async def test_retry_worker_single_lock_acquisition_per_cycle(backend):
     pkt = _make_packet(msgno=1, last_send_attempt=1, last_send_time=datetime.now() - timedelta(seconds=200))
     backend._waiting_ack["REMOTE-1-1"] = pkt
 
-    # Run retry_worker for just enough time to complete one iteration over
-    # the snapshot, then cancel it. We patch the final sleep(5) so the test
-    # doesn't wait.
-    async def run_one_cycle():
-        # Manually execute one cycle: snapshot under lock, then iterate.
-        # This mirrors what retry_worker does in its loop body.
-        async with backend._waiting_ack_lock:
-            current_items = list(backend._waiting_ack.items())
-        # Iterate outside the lock (as retry_worker does)
-        for key, this_packet in current_items:
-            if this_packet.last_send_attempt > backend._message_max_retry:
-                await backend._APRSBackend__drop_message_from_waiting(key)
-                continue
-            if (datetime.now() - this_packet.last_send_time).total_seconds() > backend._message_retry_wait:
-                backend.send_message(MagicMock())
-            await asyncio.sleep(0.001)
+    event, patched_sleep = _run_one_cycle(backend)
 
-    await run_one_cycle()
+    with patch("aprs_backend.aprs.asyncio.sleep", patched_sleep):
+        task = asyncio.create_task(backend.retry_worker())
+        await event.wait()
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
     assert instrumented.acquire_count == 1
 
@@ -144,20 +156,18 @@ async def test_retry_worker_no_runtime_error_under_concurrent_drop(backend):
                 runtime_error_raised = True
             raise
 
-    async def one_retry_cycle():
-        """Execute one retry_worker cycle (mirrors the real loop body)."""
-        async with backend._waiting_ack_lock:
-            current_items = list(backend._waiting_ack.items())
-        for key, this_packet in current_items:
-            if this_packet.last_send_attempt > backend._message_max_retry:
-                await backend._APRSBackend__drop_message_from_waiting(key)
-                continue
-            if (datetime.now() - this_packet.last_send_time).total_seconds() > backend._message_retry_wait:
-                backend.send_message(MagicMock())
-            await asyncio.sleep(0.001)
+    event, patched_sleep = _run_one_cycle(backend)
 
-    # Run both concurrently
-    await asyncio.gather(one_retry_cycle(), concurrent_drops())
+    with patch("aprs_backend.aprs.asyncio.sleep", patched_sleep):
+        retry_task = asyncio.create_task(backend.retry_worker())
+        drop_task = asyncio.create_task(concurrent_drops())
+        await event.wait()
+        retry_task.cancel()
+        try:
+            await retry_task
+        except asyncio.CancelledError:
+            pass
+        await drop_task
 
     assert not runtime_error_raised
 
@@ -186,18 +196,16 @@ async def test_retry_worker_no_duplicate_processing(backend):
         pkt = _make_packet(msgno=i, last_send_attempt=8, last_send_time=datetime.now() - timedelta(seconds=200))
         backend._waiting_ack[f"REMOTE-1-{i}"] = pkt
 
-    async def one_retry_cycle():
-        async with backend._waiting_ack_lock:
-            current_items = list(backend._waiting_ack.items())
-        for key, this_packet in current_items:
-            if this_packet.last_send_attempt > backend._message_max_retry:
-                await backend._APRSBackend__drop_message_from_waiting(key)
-                continue
-            if (datetime.now() - this_packet.last_send_time).total_seconds() > backend._message_retry_wait:
-                backend.send_message(MagicMock())
-            await asyncio.sleep(0.001)
+    event, patched_sleep = _run_one_cycle(backend)
 
-    await one_retry_cycle()
+    with patch("aprs_backend.aprs.asyncio.sleep", patched_sleep):
+        task = asyncio.create_task(backend.retry_worker())
+        await event.wait()
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
     # Each key should appear at most once
     assert len(processed_keys) == len(set(processed_keys))
@@ -226,18 +234,16 @@ async def test_retry_worker_drops_entry_over_max_retries(backend):
 
     backend._APRSBackend__drop_message_from_waiting = tracked_drop
 
-    async def one_retry_cycle():
-        async with backend._waiting_ack_lock:
-            current_items = list(backend._waiting_ack.items())
-        for key, this_packet in current_items:
-            if this_packet.last_send_attempt > backend._message_max_retry:
-                await backend._APRSBackend__drop_message_from_waiting(key)
-                continue
-            if (datetime.now() - this_packet.last_send_time).total_seconds() > backend._message_retry_wait:
-                backend.send_message(MagicMock())
-            await asyncio.sleep(0.001)
+    event, patched_sleep = _run_one_cycle(backend)
 
-    await one_retry_cycle()
+    with patch("aprs_backend.aprs.asyncio.sleep", patched_sleep):
+        task = asyncio.create_task(backend.retry_worker())
+        await event.wait()
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
     assert "REMOTE-1-1" in drop_called_with
     assert "REMOTE-1-1" not in backend._waiting_ack
@@ -269,20 +275,16 @@ async def test_retry_worker_resends_overdue_but_not_recent(backend):
 
     backend.send_message = MagicMock(side_effect=track_send)
 
-    async def one_retry_cycle():
-        async with backend._waiting_ack_lock:
-            current_items = list(backend._waiting_ack.items())
-        for key, this_packet in current_items:
-            if this_packet.last_send_attempt > backend._message_max_retry:
-                await backend._APRSBackend__drop_message_from_waiting(key)
-                continue
-            if (datetime.now() - this_packet.last_send_time).total_seconds() > backend._message_retry_wait:
-                from aprs_backend.message import APRSMessage
+    event, patched_sleep = _run_one_cycle(backend)
 
-                backend.send_message(APRSMessage.from_message_packet(this_packet))
-            await asyncio.sleep(0.001)
-
-    await one_retry_cycle()
+    with patch("aprs_backend.aprs.asyncio.sleep", patched_sleep):
+        task = asyncio.create_task(backend.retry_worker())
+        await event.wait()
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
     # Only the overdue packet should trigger a send
     assert len(sent_messages) == 1
@@ -322,20 +324,16 @@ async def test_retry_worker_checks_max_retries_before_timing(backend):
 
     backend.send_message = MagicMock(side_effect=track_send)
 
-    async def one_retry_cycle():
-        async with backend._waiting_ack_lock:
-            current_items = list(backend._waiting_ack.items())
-        for key, this_packet in current_items:
-            if this_packet.last_send_attempt > backend._message_max_retry:
-                await backend._APRSBackend__drop_message_from_waiting(key)
-                continue
-            if (datetime.now() - this_packet.last_send_time).total_seconds() > backend._message_retry_wait:
-                from aprs_backend.message import APRSMessage
+    event, patched_sleep = _run_one_cycle(backend)
 
-                backend.send_message(APRSMessage.from_message_packet(this_packet))
-            await asyncio.sleep(0.001)
-
-    await one_retry_cycle()
+    with patch("aprs_backend.aprs.asyncio.sleep", patched_sleep):
+        task = asyncio.create_task(backend.retry_worker())
+        await event.wait()
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
     assert drop_called, "Entry over max retries should be dropped"
     assert not send_called, "Entry over max retries should NOT be resent (max-retries check first)"
