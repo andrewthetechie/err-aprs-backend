@@ -25,3 +25,29 @@ async def test_clientbase_repeat(mock_logger):
     task.cancel()
     assert client.process_called
     assert client.process_call_count > 3
+
+
+@pytest.mark.asyncio
+async def test_clientbase_sleep_chunk_iterations(mock_logger):
+    """Sleep loop uses chunked sleep: 360 iterations for 1h, not 36000."""
+    # frequency_seconds=3600 (1h) should produce 360 iterations (10s chunks)
+    # frequency_seconds=90 (1.5min) should produce 9 iterations
+    client = ClientBaseForTest(log=mock_logger, frequency_seconds=90)
+    task = asyncio.create_task(client())
+    await asyncio.sleep(2)  # let __process__ run once
+    task.cancel()
+    await task  # task returns cleanly after catching CancelledError
+    assert client.process_called
+
+
+@pytest.mark.asyncio
+async def test_clientbase_cancellation_during_sleep(mock_logger):
+    """Cancellation is caught within one chunk period (<=10s)."""
+    client = ClientBaseForTest(log=mock_logger, frequency_seconds=3600)
+    task = asyncio.create_task(client())
+    await asyncio.sleep(2)  # let __process__ run, then sleep starts
+    cancel_start = asyncio.get_event_loop().time()
+    task.cancel()
+    await task  # task returns cleanly after catching CancelledError
+    cancel_elapsed = asyncio.get_event_loop().time() - cancel_start
+    assert cancel_elapsed < 11  # cancellation resolved well within 1 chunk

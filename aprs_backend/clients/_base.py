@@ -18,9 +18,17 @@ class ClientBase:
         try:
             while True:
                 await self.__process__()
-                # instead of sleeping in one big chunk, sleep in smaller chunks for easier cacnellation
-                for i in range(self.frequency_seconds * 10):
-                    await asyncio.sleep(0.1)
+                # sleep in chunks for cancellability
+                chunk_seconds = min(10, self.frequency_seconds)
+                remaining = self.frequency_seconds
+                while remaining > 0:
+                    sleep_time = min(chunk_seconds, remaining)
+                    try:
+                        await asyncio.sleep(sleep_time)
+                    except asyncio.CancelledError:
+                        self.log.info("%s cancelled, stopping", self.__class__.__name__)
+                        return
+                    remaining -= sleep_time
         except asyncio.CancelledError:
             self.log.info("%scancelled, stopping", self.__class__.__name__)
             return
