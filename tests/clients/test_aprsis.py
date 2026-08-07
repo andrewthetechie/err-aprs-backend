@@ -3,7 +3,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from aprs_backend.clients import APRSISClient
-from aprs_backend.exceptions.client.aprsis import APRSISConnnectError
+from aprs_backend.exceptions.client.aprsis import APRSISConnnectError, APRSISLoginError
 
 
 @pytest.fixture
@@ -148,3 +148,89 @@ async def test_disconnect_resets_state_when_wait_closed_raises(mock_logger):
     assert client._writer is None
     assert client._reader is None
     assert client.connected is False
+
+
+def test_default_login_read_timeout(aprsis_client):
+    """Default login read timeout should be 10 seconds."""
+    assert aprsis_client._login_read_timeout == 10.0
+
+
+def test_custom_login_read_timeout(mock_logger):
+    """Custom login read timeout should be respected."""
+    client = APRSISClient(
+        callsign="TEST-1",
+        password="1234",
+        login_read_timeout=20.0,
+        logger=mock_logger,
+    )
+    assert client._login_read_timeout == 20.0
+
+
+@pytest.mark.asyncio
+async def test_login_read_timeout_used_in_wait_for(mock_logger):
+    """asyncio.wait_for should be called with the configured login_read_timeout."""
+    client = APRSISClient(
+        callsign="TEST-1",
+        password="1234",
+        host="test.aprs2.net",
+        port=14580,
+        login_read_timeout=15.0,
+        logger=mock_logger,
+    )
+
+    wait_for_calls = []
+    call_count = [0]
+
+    async def mock_wait_for(coro, timeout=None):
+        call_count[0] += 1
+        wait_for_calls.append(timeout)
+        if call_count[0] == 1:
+            return b"APRS-IS Linux 3.0.19+gcc12.2.0"
+        raise asyncio.TimeoutError("mock timeout")
+
+    mock_reader = MagicMock()
+    mock_reader.readline = AsyncMock()
+    client._reader = mock_reader
+    mock_writer = MagicMock()
+    mock_writer.wait_closed = AsyncMock()
+    client._writer = mock_writer
+    client._writer.write = MagicMock()
+    client._writer.drain = AsyncMock()
+
+    with patch.object(asyncio, "wait_for", mock_wait_for):
+        with pytest.raises(APRSISLoginError):
+            await client._send_login()
+
+    # Both readline calls should be wrapped with the configured timeout
+    assert len(wait_for_calls) == 2
+    assert wait_for_calls[0] == 15.0
+    assert wait_for_calls[1] == 15.0
+
+
+@pytest.mark.asyncio
+async def test_login_read_timeout_raises_on_slow_server(mock_logger):
+    """When readline times out, APRSISLoginError should be raised."""
+    client = APRSISClient(
+        callsign="TEST-1",
+        password="1234",
+        host="test.aprs2.net",
+        port=14580,
+        login_read_timeout=0.1,
+        logger=mock_logger,
+    )
+
+    async def slow_readline():
+        await asyncio.sleep(10)
+        return b"version"
+
+    mock_reader = MagicMock()
+    mock_reader.readline = slow_readline
+    client._reader = mock_reader
+    mock_writer = MagicMock()
+    mock_writer.wait_closed = AsyncMock()
+    client._writer = mock_writer
+    client._writer.write = MagicMock()
+    client._writer.drain = AsyncMock()
+
+    with pytest.raises(APRSISLoginError, match="Failed to login"):
+        await client._send_login()

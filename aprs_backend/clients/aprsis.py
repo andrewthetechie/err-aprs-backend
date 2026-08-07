@@ -25,6 +25,7 @@ class APRSISClient:
         logger: logging.Logger | None = None,
         keepalive_seconds: int = 120,
         connect_timeout: float = 30.0,
+        login_read_timeout: float = 10.0,
     ):
         self.callsign = callsign
         self.password = password
@@ -35,6 +36,7 @@ class APRSISClient:
         self._app_version = app_version
         self._keepalive_seconds = keepalive_seconds
         self._connect_timeout = connect_timeout
+        self._login_read_timeout = login_read_timeout
 
         self._log = logger if logger is not None else logging.getLogger(__name__)
 
@@ -61,9 +63,13 @@ class APRSISClient:
         self._log.info("Sending login information")
         try:
             await self._send(self._aprs_login)
-            aprs_version = await self._reader.readline()
+            aprs_version = await asyncio.wait_for(
+                self._reader.readline(), timeout=self._login_read_timeout
+            )
             aprs_version = aprs_version.decode("latin-1").rstrip()
-            aprs_login_test = await self._reader.readline()
+            aprs_login_test = await asyncio.wait_for(
+                self._reader.readline(), timeout=self._login_read_timeout
+            )
             aprs_login_test = aprs_login_test.decode("latin-1").rstrip()
             self._log.debug("APRS server version Response %s", aprs_version)
             _, _, callsign, status, _, server = aprs_login_test.split(" ", 5)
