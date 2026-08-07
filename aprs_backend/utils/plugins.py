@@ -108,15 +108,15 @@ class APRSPluginInfo:
         # load the module
         module_name = base_module_name + "." + self.module
         spec = spec_from_file_location(module_name, self.location.parent / (self.module + ".py"))
-        modu1e = module_from_spec(spec)
-        spec.loader.exec_module(modu1e)
-        sys.modules[module_name] = modu1e
+        modul = module_from_spec(spec)
+        spec.loader.exec_module(modul)
+        sys.modules[module_name] = modul
 
         # introspect the modules to find plugin classes
         def is_plugin(member):
             return inspect.isclass(member) and issubclass(member, baseclass) and member != baseclass
 
-        plugin_classes = inspect.getmembers(modu1e, is_plugin)
+        plugin_classes = inspect.getmembers(modul, is_plugin)
         return plugin_classes
 
 
