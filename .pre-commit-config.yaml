@@ -9,7 +9,7 @@ repos:
       - id: trailing-whitespace
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.4.3
+    rev: v0.14.5
     hooks:
       # Run the linter.
       - id: ruff
@@ -49,17 +49,17 @@ repos:
         entry: end-of-file-fixer
         language: system
         types: [text]
-        stages: [commit, push, manual]
+        stages: [pre-commit, pre-push, manual]
       - id: pyupgrade
         name: pyupgrade
         description: Automatically upgrade syntax for newer versions.
         entry: pyupgrade
         language: system
         types: [python]
-        args: [--py311-plus]
+        args: [--py313-plus]
       - id: trailing-whitespace
         name: Trim Trailing Whitespace
         entry: trailing-whitespace-fixer
         language: system
         types: [text]
-        stages: [commit, push, manual]
+        stages: [pre-commit, pre-push, manual]

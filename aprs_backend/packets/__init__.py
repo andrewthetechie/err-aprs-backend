@@ -111,7 +111,7 @@ class Packet:
 
     def __repr__(self) -> str:
         """Build the repr version of the packet."""
-        repr = f"{self.__class__.__name__}:" f" From: {self.from_call}  " f"   To: {self.to_call}"
+        repr = f"{self.__class__.__name__}: From: {self.from_call}     To: {self.to_call}"
         return repr
 
 
@@ -247,4 +247,4 @@ class BeaconPacket(PositionPacket):
             self.payload = f"{self.payload}{self.symbol}ErrAprsBackend Beacon {BACKEND_VERSION}"
 
     def _build_raw(self) -> None:
-        self.raw = f"{self.from_call}>APERRB:" f"{self.payload}"
+        self.raw = f"{self.from_call}>APERRB:{self.payload}"

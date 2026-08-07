@@ -50,8 +50,8 @@ class APRSISClient:
     def _aprs_login(self) -> bytes:
         base_str = f"user {self.callsign} pass {self.password} vers {self._aprs_app_name} {self._app_version}"
         if self.aprs_filter.lower() != "default":
-            base_str = base_str + f" filter {self.aprs_filter}\r\n"
-        return base_str
+            base_str = base_str + f" filter {self.aprs_filter}"
+        return base_str + "\r\n"
 
     async def _send_login(self):
         """
@@ -125,14 +125,17 @@ class APRSISClient:
         self.connected = False
         self._log.info("Disconnected")
 
-    async def _send(self, packet: str, encoding: str = "utf-8") -> bool:
+    async def _send(self, packet: str | bytes, encoding: str = "utf-8") -> bool:
         self._log.debug("Sending '%s'", packet)
-        packet = packet.rstrip("\r\n") + "\r\n"
         if packet is None:
-            self._log.error("Packet is None - %s - Dropping", packet)
+            self._log.error("Packet is None - Dropping")
             return False
+        if isinstance(packet, bytes):
+            data = packet.rstrip(b"\r\n") + b"\r\n"
+        else:
+            data = (packet.rstrip("\r\n") + "\r\n").encode(encoding)
         if self._writer is not None:
-            self._writer.write(packet.encode(encoding))
+            self._writer.write(data)
             await self._writer.drain()
             return True
         else:

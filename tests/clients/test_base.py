@@ -4,7 +4,7 @@ import pytest
 import asyncio
 
 
-class TestClient(ClientBase):
+class ClientBaseForTest(ClientBase):
     def __init__(self, log: Logger, frequency_seconds: int = 3600):
         self.process_call_count = 0
         super().__init__(log, frequency_seconds)
@@ -19,7 +19,7 @@ class TestClient(ClientBase):
 
 @pytest.mark.asyncio
 async def test_clientbase_repeat(mock_logger):
-    client = TestClient(log=mock_logger, frequency_seconds=1)
+    client = ClientBaseForTest(log=mock_logger, frequency_seconds=1)
     task = asyncio.create_task(client())
     await asyncio.sleep(4)
     task.cancel()

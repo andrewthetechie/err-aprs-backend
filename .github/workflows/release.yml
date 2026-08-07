@@ -18,17 +18,14 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 2
-      - name: Set up Python
-        uses: actions/setup-python@v6.1.0
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@v6
         with:
-          python-version: "3.11"
-      - name: Install pip and poetry
-        run: |
-          pip install --upgrade --constraint .github/workflows/constraints.txt pip poetry
-          pip --version
-          poetry --version
+          python-version: "3.13"
+
       - name: Build package
         run: |
-          poetry build
+          uv build
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

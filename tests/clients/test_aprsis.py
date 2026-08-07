@@ -1,6 +1,6 @@
 import asyncio
 import pytest
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch
 
 from aprs_backend.clients import APRSISClient
 from aprs_backend.exceptions.client.aprsis import APRSISConnnectError
@@ -60,12 +60,11 @@ async def test_connect_timeout_used_in_wait_for(mock_logger):
         logger=mock_logger,
     )
 
-    original_wait_for = asyncio.wait_for
     wait_for_called_with = {}
 
     async def mock_wait_for(coro, timeout=None):
         wait_for_called_with["timeout"] = timeout
-        raise asyncio.TimeoutError("mock timeout")
+        raise TimeoutError("mock timeout")
 
     with patch.object(asyncio, "wait_for", mock_wait_for):
         with pytest.raises(APRSISConnnectError):
