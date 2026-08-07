@@ -86,7 +86,7 @@ class APRSISClient:
             self._log.error(str(e))
             await self.disconnect()
             raise
-        except asyncio.TimeoutError as exc:
+        except TimeoutError as exc:
             await self.disconnect()
             self._log.error(
                 "Timed out waiting for APRS-IS login response after %ss",
