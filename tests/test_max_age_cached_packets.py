@@ -1,7 +1,5 @@
 import logging
 
-import pytest
-
 from aprs_backend.aprs import APRSBackend
 
 
