@@ -1,6 +1,6 @@
 [project]
 name = "err-aprs-backend"
-version = "0.5.1"
+version = "0.1.0"
 description = "Errbot APRS backend plugin"
 authors = [{ name = "Andrew Herrington", email = "andrew.the.techie@gmail.com" }]
 requires-python = ">=3.13,<4"
