@@ -6,6 +6,7 @@ import pytest
 
 from aprs_backend.aprs import APRSBackend
 from aprs_backend.packets import MessagePacket
+from aprs_backend.exceptions.client.aprsis import APRSISDeadConnectionError
 
 
 class InstrumentedLock:
@@ -412,3 +413,51 @@ async def test_retry_worker_skips_ack_entry_removed_mid_cycle(backend):
 
     # No error-level log should be emitted for the expected concurrent removal
     mock_log.error.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Test: receive_worker dead-connection handling
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "error_message",
+    [
+        "Read timeout",
+        "Empty packet received. Probably missed keepalives",
+    ],
+    ids=["timeout", "empty_packet"],
+)
+async def test_receive_worker_handles_dead_connection(mock_logger, error_message):
+    """receive_worker catches APRSISDeadConnectionError, calls disconnect(), logs at warning level, and returns False."""
+
+    # Create a mock backend with the minimal attributes receive_worker needs
+    backend = MagicMock(spec=[])
+    backend._client = AsyncMock()
+    backend._client.connect = AsyncMock()
+    backend._client.get_packet = AsyncMock(side_effect=APRSISDeadConnectionError(error_message))
+    backend._client.disconnect = AsyncMock()
+    backend.listening_callsigns = ["TEST-1"]
+    backend._dropped_packets = 0
+    backend._max_dropped_packets = 25
+    backend.process_packet = AsyncMock()
+
+    # Bind the real receive_worker method to the mock
+    with patch("aprs_backend.aprs.log", mock_logger):
+        receive_worker_method = APRSBackend.receive_worker.__get__(backend, type(backend))
+        result = await receive_worker_method()
+
+    # Assert the recovery contract
+    assert result is False
+    backend._client.disconnect.assert_awaited_once()
+
+    # Assert no fatal error was logged
+    fatal_calls = [
+        call for call in mock_logger.error.call_args_list if "Fatal unhandled error reading from APRS" in str(call)
+    ]
+    assert len(fatal_calls) == 0, f"Fatal error was logged: {fatal_calls}"
+
+    # Assert a warning was logged about the dead connection
+    warning_calls = [call for call in mock_logger.warning.call_args_list if "Dead connection" in str(call)]
+    assert len(warning_calls) == 1, f"Expected one warning about dead connection, got: {warning_calls}"

@@ -26,6 +26,7 @@ class APRSISClient:
         keepalive_seconds: int = 120,
         connect_timeout: float = 30.0,
         login_read_timeout: float = 10.0,
+        read_timeout: float = 180.0,
     ):
         self.callsign = callsign
         self.password = password
@@ -37,6 +38,7 @@ class APRSISClient:
         self._keepalive_seconds = keepalive_seconds
         self._connect_timeout = connect_timeout
         self._login_read_timeout = login_read_timeout
+        self._read_timeout = read_timeout
 
         self._log = logger if logger is not None else logging.getLogger(__name__)
 
@@ -185,8 +187,13 @@ class APRSISClient:
         if not self.connected:
             raise APRSISConnnectError("Not connected")
         try:
-            # Read packet string from socket
-            packet_bytes = await self._reader.readline()
+            # Read packet string from socket with timeout to prevent indefinite hang
+            packet_bytes = await asyncio.wait_for(self._reader.readline(), timeout=self._read_timeout)
+        except TimeoutError:
+            self._log.error("Read timeout after %s seconds. Connection may be stalled.", self._read_timeout)
+            raise APRSISDeadConnectionError(
+                f"Read timeout after {self._read_timeout} seconds. Connection may be stalled."
+            )
         except Exception as exc:
             self._log.error("Could not read packet: %s", exc)
             raise APRSISPacketError from exc
