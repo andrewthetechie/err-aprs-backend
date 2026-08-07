@@ -85,11 +85,7 @@ class APRSBackend(ErrBot):
         if self._language_filter:
             profanity.load_censor_words(self._get_from_config("APRS_LANGUAGE_FILTER_EXTRA_WORDS", []))
 
-        max_age = self._get_from_config("APRS_MAX_AGE_CACHED_PACKETS_SECONDS", None)
-        if max_age is None:
-            # Backward compat with the misspelled key
-            max_age = self._get_from_config("APRS_MAX_AGE_CACHED_PACETS_SECONDS", "3600")
-        self._max_age_cached_packets_seconds = int(max_age)
+        self._max_age_cached_packets_seconds = self._resolve_max_age_seconds(self.bot_config)
         self._packet_cache = ExpiringDict(
             max_len=self._max_cached_packets, max_age_seconds=self._max_age_cached_packets_seconds
         )
@@ -144,6 +140,15 @@ class APRSBackend(ErrBot):
             plugin_manager._load_plugins_generic = funcType(_load_plugins_generic, plugin_manager)
             plugin_manager.activate_non_started_plugins = funcType(activate_non_started_plugins, plugin_manager)
         self.plugin_manager = plugin_manager
+
+    @staticmethod
+    def _resolve_max_age_seconds(bot_config) -> int:
+        """Resolve APRS_MAX_AGE_CACHED_PACKETS_SECONDS with backward-compat fallback."""
+        max_age = getattr(bot_config, "APRS_MAX_AGE_CACHED_PACKETS_SECONDS", None)
+        if max_age is None:
+            # Backward compat with the misspelled key
+            max_age = getattr(bot_config, "APRS_MAX_AGE_CACHED_PACETS_SECONDS", "3600")
+        return int(max_age)
 
     def _get_from_config(self, key: str, default: any = None) -> any:
         return getattr(self.bot_config, key, default)
