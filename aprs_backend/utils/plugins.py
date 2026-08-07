@@ -5,9 +5,8 @@ import logging
 from errbot.utils import version2tuple
 from configparser import ConfigParser
 from dataclasses import dataclass
-from importlib._bootstrap import module_from_spec
+from importlib.util import spec_from_file_location, module_from_spec
 import inspect
-from importlib._bootstrap_external import spec_from_file_location
 import sys
 
 log = logging.getLogger(__name__)
