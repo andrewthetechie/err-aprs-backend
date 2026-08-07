@@ -7,7 +7,7 @@ An APRS Backend for Errbot
 - Errbot >= 6.2.0
 - Python >= 3.13
 
-Will probably work on Python 3.10 and higher, but the backend is only currently tested against 3.13.
+Will probably work on newer Python versions, but the backend is only currently tested against 3.13.
 
 ## Disclaimers ahead of time
 
