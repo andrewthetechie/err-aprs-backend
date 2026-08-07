@@ -1,7 +1,7 @@
 import asyncio
 from aprs_backend.clients import RegistryAppConfig, APRSRegistryClient
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock
 
 from logging import getLogger
 import httpx
