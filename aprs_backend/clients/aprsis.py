@@ -189,7 +189,7 @@ class APRSISClient:
         try:
             # Read packet string from socket with timeout to prevent indefinite hang
             packet_bytes = await asyncio.wait_for(self._reader.readline(), timeout=self._read_timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self._log.error("Read timeout after %s seconds. Connection may be stalled.", self._read_timeout)
             raise APRSISDeadConnectionError(
                 f"Read timeout after {self._read_timeout} seconds. Connection may be stalled."

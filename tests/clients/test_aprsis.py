@@ -298,7 +298,7 @@ async def test_get_packet_read_timeout_value_used_in_wait_for(mock_logger):
 
     async def mock_wait_for(coro, timeout=None):
         wait_for_called_with["timeout"] = timeout
-        raise asyncio.TimeoutError("mock timeout")
+        raise TimeoutError("mock timeout")
 
     mock_reader = AsyncMock()
     client._reader = mock_reader
