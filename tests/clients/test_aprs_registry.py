@@ -129,9 +129,7 @@ async def test_APRSRegistryClient_timeout_wired_into_client(registry_app_config)
         )
         await client.__process__()
 
-    assert "timeout" in captured_kwargs, (
-        "timeout kwarg was not passed to httpx.AsyncClient"
-    )
+    assert "timeout" in captured_kwargs, "timeout kwarg was not passed to httpx.AsyncClient"
     assert isinstance(captured_kwargs["timeout"], httpx.Timeout)
     assert captured_kwargs["timeout"].connect == 15.0
     assert captured_kwargs["timeout"].read == 15.0
