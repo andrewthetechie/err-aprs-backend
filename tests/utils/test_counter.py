@@ -90,6 +90,4 @@ async def test_concurrency_stress():
         # first increment yields 2).
         if 2 <= v <= remainder + 1:
             expected += 1
-        assert count == expected, (
-            f"Value {v} appeared {count} times, expected {expected}"
-        )
+        assert count == expected, f"Value {v} appeared {count} times, expected {expected}"
