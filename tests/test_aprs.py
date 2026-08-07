@@ -255,15 +255,11 @@ async def test_retry_worker_resends_overdue_but_not_recent(backend):
     entry does not."""
 
     # Overdue packet (sent 200 seconds ago, wait is 90s)
-    overdue_pkt = _make_packet(
-        msgno=1, last_send_attempt=1, last_send_time=datetime.now() - timedelta(seconds=200)
-    )
+    overdue_pkt = _make_packet(msgno=1, last_send_attempt=1, last_send_time=datetime.now() - timedelta(seconds=200))
     backend._waiting_ack["REMOTE-1-1"] = overdue_pkt
 
     # Recent packet (sent 10 seconds ago, wait is 90s)
-    recent_pkt = _make_packet(
-        msgno=2, last_send_attempt=1, last_send_time=datetime.now() - timedelta(seconds=10)
-    )
+    recent_pkt = _make_packet(msgno=2, last_send_attempt=1, last_send_time=datetime.now() - timedelta(seconds=10))
     backend._waiting_ack["REMOTE-1-2"] = recent_pkt
 
     sent_messages = []
@@ -306,9 +302,7 @@ async def test_retry_worker_checks_max_retries_before_timing(backend):
     An entry over max retries should be dropped even if it is also overdue."""
 
     # Entry that is both over max retries AND overdue
-    pkt = _make_packet(
-        msgno=1, last_send_attempt=8, last_send_time=datetime.now() - timedelta(seconds=200)
-    )
+    pkt = _make_packet(msgno=1, last_send_attempt=8, last_send_time=datetime.now() - timedelta(seconds=200))
     backend._waiting_ack["REMOTE-1-1"] = pkt
 
     drop_called = False
