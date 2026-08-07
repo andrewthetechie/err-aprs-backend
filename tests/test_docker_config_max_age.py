@@ -1,8 +1,6 @@
 import importlib
 import sys
 
-import pytest
-
 
 def _reload_config(monkeypatch, env_overrides=None):
     """Reload docker.config with isolated environment.
