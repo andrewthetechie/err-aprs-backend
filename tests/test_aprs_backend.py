@@ -1,4 +1,3 @@
-from unittest.mock import MagicMock
 from types import SimpleNamespace
 import pytest
 
