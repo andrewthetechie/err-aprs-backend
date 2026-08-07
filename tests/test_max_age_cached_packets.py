@@ -58,3 +58,12 @@ def test_no_deprecation_warning_with_default(caplog):
         result = APRSBackend._resolve_max_age_seconds(bot_config)
     assert result == 3600
     assert "APRS_MAX_AGE_CACHED_PACETS_SECONDS" not in caplog.text
+
+
+def test_correct_spelling_wins_when_both_set():
+    """Correctly-spelled key wins when both correct and misspelled keys are present."""
+    bot_config = StubConfig(
+        APRS_MAX_AGE_CACHED_PACKETS_SECONDS="7200",
+        APRS_MAX_AGE_CACHED_PACETS_SECONDS="1800",
+    )
+    assert APRSBackend._resolve_max_age_seconds(bot_config) == 7200
