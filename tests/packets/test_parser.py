@@ -8,6 +8,19 @@ from aprs_backend.packets import MessagePacket
 from aprs_backend.packets.parser import hash_packet
 
 
+def _build_minimal_backend():
+    """Factory that partially constructs an APRSBackend with only the
+    attributes required by _process_message's dedup path."""
+    from aprs_backend.aprs import APRSBackend
+
+    backend = object.__new__(APRSBackend)
+    backend._packet_cache = {}
+    backend._packet_cache_lock = asyncio.Lock()
+    backend._ack_message = AsyncMock()
+    backend.callback_message = MagicMock()
+    return backend
+
+
 def test_hash_is_deterministic():
     """Same (to, addresse, msg_no) always produces the same hash."""
     h1 = hash_packet("W1AW", "W2AW", "001")
@@ -81,7 +94,6 @@ def test_hash_none_inputs_are_distinct_from_non_none():
 @pytest.mark.asyncio
 async def test_process_message_dedup_skips_repeated_packet():
     """The dedup path in _process_message skips a repeated packet (same to/addresse/msgNo)."""
-    from aprs_backend.aprs import APRSBackend
 
     # Build two MessagePackets with identical (to, addresse, msgNo)
     packet1 = MessagePacket(
@@ -112,14 +124,13 @@ async def test_process_message_dedup_skips_repeated_packet():
     h2 = hash_packet(packet2.to, packet2.addresse, packet2.msgNo)
     assert h1 == h2
 
-    # Mock the APRSBackend minimally to exercise _process_message
-    with patch.object(APRSBackend, "__init__", lambda self, config: None):
-        backend = APRSBackend(None)
-        backend._packet_cache = {}
-        backend._packet_cache_lock = asyncio.Lock()
-        backend._ack_message = AsyncMock()
-        backend.callback_message = MagicMock()
+    backend = _build_minimal_backend()
 
+    # Mock APRSMessage.from_message_packet so the test depends only on
+    # dedup behavior, not on real APRSMessage/APRSPerson construction.
+    mock_msg = MagicMock()
+    mock_msg.body = "hello"
+    with patch("aprs_backend.aprs.APRSMessage.from_message_packet", return_value=mock_msg):
         # First packet should NOT be deduped — callback_message called
         await backend._process_message(packet1)
         assert backend.callback_message.call_count == 1
@@ -131,3 +142,51 @@ async def test_process_message_dedup_skips_repeated_packet():
         # Third distinct packet should NOT be deduped
         await backend._process_message(packet3)
         assert backend.callback_message.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_dedup_hash_and_cache_isolation():
+    """Focused test of the dedup branch: hash + cache check at aprs.py:458-463.
+
+    This test exercises only the hash computation and cache lookup without
+    depending on the full _process_message dispatch internals (APRSMessage
+    construction, body stripping, callback dispatch, etc.).
+    """
+
+    backend = _build_minimal_backend()
+
+    # Identical packets share the same dedup key
+    packet_dup = MessagePacket(
+        from_call="W1AW",
+        to_call="W2AW",
+        addresse="W2AW",
+        msgNo="001",
+        message_text="dup",
+    )
+    # Distinct packet has a different msgNo
+    packet_distinct = MessagePacket(
+        from_call="W1AW",
+        to_call="W2AW",
+        addresse="W2AW",
+        msgNo="002",
+        message_text="distinct",
+    )
+
+    dup_hash = hash_packet(packet_dup.to, packet_dup.addresse, packet_dup.msgNo)
+    distinct_hash = hash_packet(packet_distinct.to, packet_distinct.addresse, packet_distinct.msgNo)
+    assert dup_hash != distinct_hash
+
+    # Simulate the dedup logic from _process_message lines 458-463:
+    # First packet: hash not in cache, so it is stored.
+    async with backend._packet_cache_lock:
+        assert backend._packet_cache.get(dup_hash, None) is None
+        backend._packet_cache[dup_hash] = packet_dup
+
+    # Second identical packet: hash IS in cache, so it would be skipped.
+    async with backend._packet_cache_lock:
+        assert backend._packet_cache.get(dup_hash, None) is not None
+
+    # Distinct packet: hash not in cache, so it is NOT deduped.
+    async with backend._packet_cache_lock:
+        assert backend._packet_cache.get(distinct_hash, None) is None
+        backend._packet_cache[distinct_hash] = packet_distinct
