@@ -62,14 +62,14 @@ class APRSBackend(ErrBot):
             log.fatal("No password in bot identity")
             sys.exit(1)
 
-        self.listening_callsigns = [aprs_config["callsign"]]
+        self.listening_callsigns = {aprs_config["callsign"]}
 
         self.callsign = self._get_from_config("APRS_BOT_CALLSIGN", aprs_config["callsign"])
         self.bot_identifier = APRSPerson(self.callsign)
         if self.callsign != aprs_config["callsign"]:
             # bot is using a different callsign from the signin, add it to the filter
             aprs_config["aprs_filter"] = f"g/{aprs_config['callsign']}/{self.callsign}"
-            self.listening_callsigns.append(self.callsign)
+            self.listening_callsigns.add(self.callsign)
         aprs_config["connect_timeout"] = float(self._get_from_config("APRS_CONNECT_TIMEOUT", "30.0"))
         aprs_config["login_read_timeout"] = float(self._get_from_config("APRS_LOGIN_READ_TIMEOUT", "10.0"))
         aprs_config["read_timeout"] = float(self._get_from_config("APRS_READ_TIMEOUT", "180.0"))

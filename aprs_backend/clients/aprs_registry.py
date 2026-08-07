@@ -8,7 +8,7 @@ from logging import Logger
 @dataclass
 class RegistryAppConfig:
     description: str
-    listening_callsigns: list[str]
+    listening_callsigns: set[str]
     website: str = ""
     software: str = ""
 
