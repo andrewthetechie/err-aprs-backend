@@ -152,17 +152,8 @@ class APRSBackend(ErrBot):
 
     @staticmethod
     def _resolve_max_age_seconds(bot_config) -> int:
-        """Resolve APRS_MAX_AGE_CACHED_PACKETS_SECONDS with backward-compat fallback."""
-        max_age = getattr(bot_config, "APRS_MAX_AGE_CACHED_PACKETS_SECONDS", None)
-        if max_age is None:
-            misspelled = getattr(bot_config, "APRS_MAX_AGE_CACHED_PACETS_SECONDS", None)
-            if misspelled is not None:
-                log.warning(
-                    "APRS_MAX_AGE_CACHED_PACETS_SECONDS is deprecated; use APRS_MAX_AGE_CACHED_PACKETS_SECONDS instead"
-                )
-                max_age = misspelled
-            else:
-                max_age = "3600"
+        """Resolve APRS_MAX_AGE_CACHED_PACKETS_SECONDS, defaulting to 3600."""
+        max_age = getattr(bot_config, "APRS_MAX_AGE_CACHED_PACKETS_SECONDS", "3600")
         return int(max_age)
 
     def _get_from_config(self, key: str, default: any = None) -> any:

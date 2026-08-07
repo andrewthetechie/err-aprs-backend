@@ -34,18 +34,7 @@ APRS_BOT_CALLSIGN = os.environ.get("APRS_BOT_CALLSIGN", __callsign)
 APRS_HELP_TEXT = os.environ.get("APRS_HELP_TEXT", "APRSBot,Errbot & err-aprs-backend")
 APRS_MAX_DROPPED_PACKETS = os.environ.get("APRS_MAX_DROPPED_PACKETS", "25")
 APRS_MAX_CACHED_PACKETS = os.environ.get("APRS_MAX_CACHED_PACKETS", "2048")
-_corrected_ttl = os.environ.get("APRS_MAX_AGE_CACHED_PACKETS_SECONDS")
-if _corrected_ttl is not None:
-    APRS_MAX_AGE_CACHED_PACKETS_SECONDS = _corrected_ttl
-else:
-    _misspelled_ttl = os.environ.get("APRS_MAX_AGE_CACHED_PACETS_SECONDS")
-    if _misspelled_ttl is not None:
-        logger.warning(
-            "APRS_MAX_AGE_CACHED_PACETS_SECONDS is deprecated; use APRS_MAX_AGE_CACHED_PACKETS_SECONDS instead"
-        )
-        APRS_MAX_AGE_CACHED_PACKETS_SECONDS = _misspelled_ttl
-    else:
-        APRS_MAX_AGE_CACHED_PACKETS_SECONDS = "3600"
+APRS_MAX_AGE_CACHED_PACKETS_SECONDS = os.environ.get("APRS_MAX_AGE_CACHED_PACKETS_SECONDS", "3600")
 APRS_MESSAGE_MAX_RETRIES = os.environ.get("APRS_MESSAGE_MAX_RETRIES", "7")
 APRS_MESSAGE_RETRY_WAIT = os.environ.get("APRS_MESSAGE_RETRY_WAIT", "90")
 APRS_STRIP_NEWLINES = os.environ.get("APRS_STRIP_NEWLINES", "true")

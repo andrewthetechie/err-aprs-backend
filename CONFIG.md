@@ -21,7 +21,7 @@ BOT_IDENTITY = {
 * APRS_HELP_TEXT - default "APRSBot,Errbot & err-aprs-backend", set this to your text. Probably a good idea to set it to website for complex help text due to message character limits
 * APRS_MAX_DROPPED_PACKETS - default "25", how many packets we can drop before the bot backend will restart
 * APRS_MAX_CACHED_PACKETS - default "2048", how many packets to hold in the cache to dedupe.
-* APRS_MAX_AGE_CACHED_PACKETS_SECONDS - default "3600", how long to hold onto a package in the cache for deduping. The misspelled key `APRS_MAX_AGE_CACHED_PACETS_SECONDS` is still accepted for backward compatibility.
+* APRS_MAX_AGE_CACHED_PACKETS_SECONDS - default "3600", how long to hold onto a package in the cache for deduping.
 * APRS_MESSAGE_MAX_RETRIES - default "7", how many times to retry sending a message if the bot does do not get an ack or a rej
 * APRS_MESSAGE_RETRY_WAIT - default "90", how many seconds to wait between retrying message sending
 * APRS_STRIP_NEWLINES - default "true", strip newlines out of plugin responses, probably best to leave it as true

@@ -29,31 +29,18 @@ def _reload_config(monkeypatch, env_overrides=None):
     return importlib.import_module("docker.config")
 
 
-def test_docker_config_both_env_vars_correct_wins(monkeypatch):
-    """When both env vars are set, the correctly-spelled value wins."""
+def test_docker_config_correct_spelling_applied(monkeypatch):
+    """Correctly-spelled env var is used when set."""
     monkeypatch.delenv("APRS_MAX_AGE_CACHED_PACKETS_SECONDS", raising=False)
-    monkeypatch.delenv("APRS_MAX_AGE_CACHED_PACETS_SECONDS", raising=False)
     monkeypatch.setenv("APRS_MAX_AGE_CACHED_PACKETS_SECONDS", "7200")
-    monkeypatch.setenv("APRS_MAX_AGE_CACHED_PACETS_SECONDS", "1800")
 
     config = _reload_config(monkeypatch)
     assert config.APRS_MAX_AGE_CACHED_PACKETS_SECONDS == "7200"
 
 
-def test_docker_config_misspelled_fallback(monkeypatch):
-    """When only the misspelled env var is set, the fallback value is used."""
+def test_docker_config_default_when_not_set(monkeypatch):
+    """Default 3600 is used when the env var is not set."""
     monkeypatch.delenv("APRS_MAX_AGE_CACHED_PACKETS_SECONDS", raising=False)
-    monkeypatch.delenv("APRS_MAX_AGE_CACHED_PACETS_SECONDS", raising=False)
-    monkeypatch.setenv("APRS_MAX_AGE_CACHED_PACETS_SECONDS", "1800")
-
-    config = _reload_config(monkeypatch)
-    assert config.APRS_MAX_AGE_CACHED_PACKETS_SECONDS == "1800"
-
-
-def test_docker_config_default_when_neither_set(monkeypatch):
-    """When neither env var is set, the default 3600 is used."""
-    monkeypatch.delenv("APRS_MAX_AGE_CACHED_PACKETS_SECONDS", raising=False)
-    monkeypatch.delenv("APRS_MAX_AGE_CACHED_PACETS_SECONDS", raising=False)
 
     config = _reload_config(monkeypatch)
     assert config.APRS_MAX_AGE_CACHED_PACKETS_SECONDS == "3600"
