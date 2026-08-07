@@ -12,8 +12,8 @@ class APRSHealth(BotPlugin):
     def status(self, _):
         """If I am alive I should be able to respond to this one"""
         pm = self._bot.plugin_manager
-        all_blacklisted = pm.get_blacklisted_plugin()
-        all_loaded = pm.get_all_active_plugin_names()
+        all_blacklisted = set(pm.get_blacklisted_plugin())
+        all_loaded = set(pm.get_all_active_plugin_names())
         all_attempted = sorted(pm.plugin_infos.keys())
         plugins_statuses = []
         for name in all_attempted:
