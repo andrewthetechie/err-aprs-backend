@@ -396,8 +396,7 @@ async def test_retry_worker_skips_ack_entry_removed_mid_cycle(backend):
         else:
             await real_sleep(delay)
 
-    with patch("aprs_backend.aprs.asyncio.sleep", patched_sleep_with_drop), \
-         patch("aprs_backend.aprs.log") as mock_log:
+    with patch("aprs_backend.aprs.asyncio.sleep", patched_sleep_with_drop), patch("aprs_backend.aprs.log") as mock_log:
         task = asyncio.create_task(backend.retry_worker())
         # Wait long enough for the cycle to complete
         await real_sleep(0.1)
@@ -409,8 +408,7 @@ async def test_retry_worker_skips_ack_entry_removed_mid_cycle(backend):
 
     # Entry 2 was removed mid-cycle, so it must NOT have been resent.
     sent_keys = [p.addresse + "-" + p.msgNo for p in sent_packets if p is not None]
-    assert "REMOTE-1-2" not in sent_keys, \
-        "send_message must NOT be called for an entry ACKed mid-cycle"
+    assert "REMOTE-1-2" not in sent_keys, "send_message must NOT be called for an entry ACKed mid-cycle"
 
     # No error-level log should be emitted for the expected concurrent removal
     mock_log.error.assert_not_called()
