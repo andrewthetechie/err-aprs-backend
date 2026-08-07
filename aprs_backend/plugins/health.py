@@ -24,14 +24,16 @@ class APRSHealth(BotPlugin):
                     plugins_statuses.append(("BD", name))
             elif name in all_loaded:
                 plugins_statuses.append(("A", name))
-            elif (
-                pm.get_plugin_obj_by_name(name) is not None
-                and pm.get_plugin_obj_by_name(name).get_configuration_template() is not None
-                and pm.get_plugin_configuration(name) is None
-            ):
-                plugins_statuses.append(("C", name))
             else:
-                plugins_statuses.append(("D", name))
+                plugin_obj = pm.get_plugin_obj_by_name(name)
+                if (
+                    plugin_obj is not None
+                    and plugin_obj.get_configuration_template() is not None
+                    and pm.get_plugin_configuration(name) is None
+                ):
+                    plugins_statuses.append(("C", name))
+                else:
+                    plugins_statuses.append(("D", name))
         loads = self.status_load("")
         gc = self.status_gc("")
 
