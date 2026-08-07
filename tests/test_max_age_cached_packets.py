@@ -1,8 +1,3 @@
-import pytest
-from unittest.mock import patch, MagicMock
-from aprs_backend.aprs import APRSBackend
-
-
 class StubConfig:
     """Minimal config stub exposing only the attributes needed for max_age tests."""
 
