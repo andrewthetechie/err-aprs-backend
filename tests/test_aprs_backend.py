@@ -68,3 +68,33 @@ def test_beacon_enabled_missing_latitude_returns_none():
     )
     backend = _MinimalAPRSBackend(config, callsign="TEST-1")
     assert backend._get_beacon_config() is None
+
+
+@pytest.mark.parametrize("value", ["True", "TRUE", "TrUe", True])
+def test_beacon_mixed_case_enable_returns_config(value):
+    """Mixed-case or boolean True values for APRS_BEACON_ENABLE return a BeaconConfig."""
+    config = SimpleNamespace(
+        APRS_BEACON_ENABLE=value,
+        APRS_BEACON_LATITUDE="40.0",
+        APRS_BEACON_LONGITUDE="-74.0",
+        APRS_BEACON_SYMBOL="l",
+        APRS_BEACON_SYMBOL_TABLE="/",
+    )
+    backend = _MinimalAPRSBackend(config, callsign="TEST-1")
+    result = backend._get_beacon_config()
+    assert result is not None
+    assert isinstance(result, BeaconConfig)
+
+
+@pytest.mark.parametrize("value", ["False", "FALSE", "FaLsE", False])
+def test_beacon_mixed_case_disable_returns_none(value):
+    """Mixed-case or boolean False values for APRS_BEACON_ENABLE return None."""
+    config = SimpleNamespace(
+        APRS_BEACON_ENABLE=value,
+        APRS_BEACON_LATITUDE="40.0",
+        APRS_BEACON_LONGITUDE="-74.0",
+        APRS_BEACON_SYMBOL="l",
+        APRS_BEACON_SYMBOL_TABLE="/",
+    )
+    backend = _MinimalAPRSBackend(config, callsign="TEST-1")
+    assert backend._get_beacon_config() is None
