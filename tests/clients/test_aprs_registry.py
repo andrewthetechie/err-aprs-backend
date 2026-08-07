@@ -7,6 +7,32 @@ from logging import getLogger
 import httpx
 
 
+def _fake_async_client(post_fn=None, capture_kwargs=None):
+    """Factory for FakeAsyncClient with an injectable post function and optional kwargs capture."""
+
+    class FakeAsyncClient:
+        def __init__(self, **kwargs):
+            if capture_kwargs is not None:
+                capture_kwargs.update(kwargs)
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+        if post_fn is not None:
+            post = post_fn
+        else:
+
+            async def post(self, *args, **kwargs):
+                response = MagicMock()
+                response.raise_for_status = MagicMock()
+                return response
+
+    return FakeAsyncClient
+
+
 @pytest.fixture
 def registry_app_config():
     return RegistryAppConfig(
@@ -55,6 +81,10 @@ async def test_APRSRegistryClient_errors(httpx_mock, mock_logger, registry_app_c
     )
     await this_APRSRegistryClient.__process__()
     assert mock_logger.error.call_count == 1
+    # HTTPStatusError includes the response object for diagnostics
+    error_call = mock_logger.error.call_args
+    assert error_call[0][0] == "Registry POST failed for %s: %s, response: %s"
+    assert error_call[0][3] is not None  # response object
 
 
 @pytest.mark.asyncio
@@ -105,21 +135,7 @@ async def test_APRSRegistryClient_timeout_wired_into_client(registry_app_config)
     the AsyncClient call in APRSRegistryClient.__process__.
     """
     captured_kwargs = {}
-
-    class FakeAsyncClient:
-        def __init__(self, **kwargs):
-            captured_kwargs.update(kwargs)
-
-        async def __aenter__(self):
-            return self
-
-        async def __aexit__(self, *args):
-            pass
-
-        async def post(self, *args, **kwargs):
-            response = MagicMock()
-            response.raise_for_status = MagicMock()
-            return response
+    FakeAsyncClient = _fake_async_client(capture_kwargs=captured_kwargs)
 
     with patch("aprs_backend.clients.aprs_registry.httpx.AsyncClient", FakeAsyncClient):
         client = APRSRegistryClient(
@@ -149,17 +165,7 @@ async def test_APRSRegistryClient_posts_concurrently(registry_app_config):
         response.raise_for_status = MagicMock()
         return response
 
-    class FakeAsyncClient:
-        def __init__(self, **kwargs):
-            pass
-
-        async def __aenter__(self):
-            return self
-
-        async def __aexit__(self, *args):
-            pass
-
-        post = tracking_post
+    FakeAsyncClient = _fake_async_client(post_fn=tracking_post)
 
     with patch("aprs_backend.clients.aprs_registry.httpx.AsyncClient", FakeAsyncClient):
         # Use a config with multiple callsigns
@@ -195,17 +201,7 @@ async def test_APRSRegistryClient_one_failure_does_not_cancel_others(mock_logger
         response.raise_for_status = MagicMock()
         return response
 
-    class FakeAsyncClient:
-        def __init__(self, **kwargs):
-            pass
-
-        async def __aenter__(self):
-            return self
-
-        async def __aexit__(self, *args):
-            pass
-
-        post = selective_fail
+    FakeAsyncClient = _fake_async_client(post_fn=selective_fail)
 
     with patch("aprs_backend.clients.aprs_registry.httpx.AsyncClient", FakeAsyncClient):
         multi_config = RegistryAppConfig(
@@ -223,6 +219,6 @@ async def test_APRSRegistryClient_one_failure_does_not_cancel_others(mock_logger
     assert call_count == 3, f"Expected 3 POST attempts, got {call_count}"
     # Exactly one error log call for the single failed POST
     assert mock_logger.error.call_count == 1, f"Expected 1 error call, got {mock_logger.error.call_count}"
-    # Assert the single remaining ERROR message format from __process__
+    # RequestError uses the generic format without response
     error_call = mock_logger.error.call_args
     assert error_call[0][0] == "Registry POST failed for %s: %s"

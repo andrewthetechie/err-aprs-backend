@@ -51,14 +51,22 @@ class APRSRegistryClient(ClientBase):
             )
             for post_json, result in zip(self.app_config.post_jsons, results):
                 if isinstance(result, Exception):
-                    self.log.error(
-                        "Registry POST failed for %s: %s",
-                        post_json,
-                        result,
-                    )
+                    if isinstance(result, httpx.HTTPStatusError):
+                        self.log.error(
+                            "Registry POST failed for %s: %s, response: %s",
+                            post_json,
+                            result,
+                            result.response,
+                        )
+                    else:
+                        self.log.error(
+                            "Registry POST failed for %s: %s",
+                            post_json,
+                            result,
+                        )
 
     async def _post_and_log(self, client: httpx.AsyncClient, post_json: dict) -> None:
-        """Send a single POST to the registry and log the result."""
+        """Send a single POST to the registry, log debug info, and raise on HTTP errors."""
         self.log.debug("Posting %s to %s", post_json, self.registry_url)
         response = await client.post(self.registry_url, json=post_json)
         self.log.debug(response)
