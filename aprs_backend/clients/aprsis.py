@@ -118,8 +118,13 @@ class APRSISClient:
 
     async def disconnect(self):
         self._log.info("Disconnecting from aprsis")
-        self._writer.close()
-        await self._writer.wait_closed()
+        if self._writer is not None:
+            self._writer.close()
+            try:
+                await self._writer.wait_closed()
+            except Exception:
+                # writer may already be closed/invalid; still reset state below
+                pass
         self._writer = None
         self._reader = None
         self.connected = False
