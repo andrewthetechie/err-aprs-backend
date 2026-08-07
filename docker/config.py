@@ -34,7 +34,7 @@ APRS_BOT_CALLSIGN = os.environ.get("APRS_BOT_CALLSIGN", __callsign)
 APRS_HELP_TEXT = os.environ.get("APRS_HELP_TEXT", "APRSBot,Errbot & err-aprs-backend")
 APRS_MAX_DROPPED_PACKETS = os.environ.get("APRS_MAX_DROPPED_PACKETS", "25")
 APRS_MAX_CACHED_PACKETS = os.environ.get("APRS_MAX_CACHED_PACKETS", "2048")
-APRS_MAX_AGE_CACHED_PACETS_SECONDS = os.environ.get("APRS_MAX_AGE_CACHED_PACETS_SECONDS", "3600")
+APRS_MAX_AGE_CACHED_PACKETS_SECONDS = os.environ.get("APRS_MAX_AGE_CACHED_PACKETS_SECONDS", "3600")
 APRS_MESSAGE_MAX_RETRIES = os.environ.get("APRS_MESSAGE_MAX_RETRIES", "7")
 APRS_MESSAGE_RETRY_WAIT = os.environ.get("APRS_MESSAGE_RETRY_WAIT", "90")
 APRS_STRIP_NEWLINES = os.environ.get("APRS_STRIP_NEWLINES", "true")
@@ -64,7 +64,14 @@ SUPPRESS_CMD_NOT_FOUND = True
 
 # core plugins are not APRS optimized, only load ones that work
 # this causes some erros in the logs
-CORE_PLUGINS = ("ACLs", "CommandNotFoundFilter", "VersionCheck", "APRSHelp", "APRSWebserver", "APRSHealth")
+CORE_PLUGINS = (
+    "ACLs",
+    "CommandNotFoundFilter",
+    "VersionCheck",
+    "APRSHelp",
+    "APRSWebserver",
+    "APRSHealth",
+)
 
 for env_var, value in os.environ.items():
     if env_var.startswith("ERR_APRS_"):

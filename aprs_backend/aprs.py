@@ -9,7 +9,11 @@ from errbot.backends.base import Message
 from errbot.backends.base import ONLINE
 from errbot.plugin_manager import BotPluginManager
 from errbot.core import ErrBot
-from aprs_backend.exceptions import ProcessorError, PacketParseError, APRSISConnnectError
+from aprs_backend.exceptions import (
+    ProcessorError,
+    PacketParseError,
+    APRSISConnnectError,
+)
 from aprs_backend.packets.parser import parse, hash_packet
 from expiringdict import ExpiringDict
 from functools import cached_property
@@ -24,9 +28,11 @@ import logging
 import asyncio
 from errbot.version import VERSION as ERR_VERSION
 from aprs_backend.clients.beacon import BeaconConfig, BeaconClient
-from aprs_backend.utils.plugins import _load_plugins_generic, activate_non_started_plugins
+from aprs_backend.utils.plugins import (
+    _load_plugins_generic,
+    activate_non_started_plugins,
+)
 from types import MethodType
-
 
 log = logging.getLogger(__name__)
 
@@ -85,13 +91,15 @@ class APRSBackend(ErrBot):
         if self._language_filter:
             profanity.load_censor_words(self._get_from_config("APRS_LANGUAGE_FILTER_EXTRA_WORDS", []))
 
-        self._max_age_cached_packets_seconds = int(self._get_from_config("APRS_MAX_AGE_CACHED_PACETS_SECONDS", "3600"))
+        self._max_age_cached_packets_seconds = self._resolve_max_age_seconds(self.bot_config)
         self._packet_cache = ExpiringDict(
-            max_len=self._max_cached_packets, max_age_seconds=self._max_age_cached_packets_seconds
+            max_len=self._max_cached_packets,
+            max_age_seconds=self._max_age_cached_packets_seconds,
         )
         self._packet_cache_lock = asyncio.Lock()
         self._waiting_ack = ExpiringDict(
-            max_len=self._max_cached_packets, max_age_seconds=self._max_age_cached_packets_seconds
+            max_len=self._max_cached_packets,
+            max_age_seconds=self._max_age_cached_packets_seconds,
         )
         self._waiting_ack_lock = asyncio.Lock()
 
@@ -102,7 +110,8 @@ class APRSBackend(ErrBot):
                 website=self._get_from_config("APRS_REGISTRY_WEBSITE", ""),
                 listening_callsigns=self.listening_callsigns,
                 software=self._get_from_config(
-                    "APRS_REGISTRY_SOFTWARE", f"err-aprs-backend {ERR_APRS_VERSION} errbot {ERR_VERSION}"
+                    "APRS_REGISTRY_SOFTWARE",
+                    f"err-aprs-backend {ERR_APRS_VERSION} errbot {ERR_VERSION}",
                 ),
             )
             if (registry_software := self._get_from_config("APRS_REGISTRY_SOFTWARE", None)) is not None:
@@ -141,6 +150,12 @@ class APRSBackend(ErrBot):
             plugin_manager._load_plugins_generic = funcType(_load_plugins_generic, plugin_manager)
             plugin_manager.activate_non_started_plugins = funcType(activate_non_started_plugins, plugin_manager)
         self.plugin_manager = plugin_manager
+
+    @staticmethod
+    def _resolve_max_age_seconds(bot_config) -> int:
+        """Resolve APRS_MAX_AGE_CACHED_PACKETS_SECONDS, defaulting to 3600."""
+        max_age = getattr(bot_config, "APRS_MAX_AGE_CACHED_PACKETS_SECONDS", "3600")
+        return int(max_age)
 
     def _get_from_config(self, key: str, default: any = None) -> any:
         return getattr(self.bot_config, key, default)
@@ -271,7 +286,10 @@ class APRSBackend(ErrBot):
                             self._waiting_ack[f"{packet.to}-{packet.msgNo}"] = packet
                 else:
                     # sending failed
-                    log.info("Packet sending failed, waiting 1 second then requeing packet %s", packet)
+                    log.info(
+                        "Packet sending failed, waiting 1 second then requeing packet %s",
+                        packet,
+                    )
                     for _ in range(10):
                         # microsleeps to let this be more cancellable
                         await asyncio.sleep(0.1)
@@ -310,10 +328,14 @@ class APRSBackend(ErrBot):
                             await self.process_packet(parsed_packet)
                         else:
                             log.info(
-                                "Packet was not addressed to the bot, not processing %s", packet_str.rstrip("\r\n")
+                                "Packet was not addressed to the bot, not processing %s",
+                                packet_str.rstrip("\r\n"),
                             )
                     else:
-                        log.info("This packet parsed to be None: %s", packet_str.rstrip("\r\n"))
+                        log.info(
+                            "This packet parsed to be None: %s",
+                            packet_str.rstrip("\r\n"),
+                        )
                 except PacketParseError as exc:
                     log.error(
                         "Dropping packet %s due to Parsing error: %s. Total Dropped Packets: %s",
@@ -345,11 +367,15 @@ class APRSBackend(ErrBot):
         Starts the bot tasks for receiving aprs messages, sending messages, and retrying
         """
         log.debug(
-            "Bot plugins: %s", [plugin.__class__.__name__ for plugin in self.plugin_manager.get_all_active_plugins()]
+            "Bot plugins: %s",
+            [plugin.__class__.__name__ for plugin in self.plugin_manager.get_all_active_plugins()],
         )
         receive_task = asyncio.create_task(self.receive_worker())
 
-        worker_tasks = [asyncio.create_task(self.send_worker()), asyncio.create_task(self.retry_worker())]
+        worker_tasks = [
+            asyncio.create_task(self.send_worker()),
+            asyncio.create_task(self.retry_worker()),
+        ]
         # if reporting to the aprs service registry is enabled, start a task for it
         if self.registry_client is not None:
             worker_tasks.append(asyncio.create_task(self.registry_client()))
@@ -442,7 +468,10 @@ class APRSBackend(ErrBot):
         """
         # Remove this message from our sent messages that are waiting for acks
         log.debug(
-            "Processing ACK/REJ packet for msgno %s from %s to %s", packet.msgNo, packet.from_call, packet.addresse
+            "Processing ACK/REJ packet for msgno %s from %s to %s",
+            packet.msgNo,
+            packet.from_call,
+            packet.addresse,
         )
         await self.__drop_message_from_waiting(f"{packet.from_call}-{packet.msgNo}")
 
@@ -477,7 +506,10 @@ class APRSBackend(ErrBot):
     async def _ack_message(self, packet: MessagePacket) -> None:
         log.debug("Sending ack for packet %s", packet.json)
         this_ack = AckPacket(
-            from_call=packet.to, to_call=packet.from_call, addresse=packet.from_call, msgNo=packet.msgNo
+            from_call=packet.to,
+            to_call=packet.from_call,
+            addresse=packet.from_call,
+            msgNo=packet.msgNo,
         )
         await this_ack.prepare(self._message_counter)
         this_ack.update_timestamp()
