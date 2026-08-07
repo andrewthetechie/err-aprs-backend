@@ -1,3 +1,9 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import asyncio
+import pytest
+
+from aprs_backend.packets import MessagePacket
 from aprs_backend.packets.parser import hash_packet
 
 
@@ -31,3 +37,58 @@ def test_different_inputs_produce_different_hashes():
     h1 = hash_packet("W1AW", "W2AW", "001")
     h2 = hash_packet("W1AW", "W2AW", "002")
     assert h1 != h2
+
+
+@pytest.mark.asyncio
+async def test_process_message_dedup_skips_repeated_packet():
+    """The dedup path in _process_message skips a repeated packet (same to/addresse/msgNo)."""
+    from aprs_backend.aprs import APRSBackend
+
+    # Build two MessagePackets with identical (to, addresse, msgNo)
+    packet1 = MessagePacket(
+        from_call="W1AW",
+        to_call="W2AW",
+        addresse="W2AW",
+        msgNo="001",
+        message_text="hello",
+    )
+    packet2 = MessagePacket(
+        from_call="W1AW",
+        to_call="W2AW",
+        addresse="W2AW",
+        msgNo="001",
+        message_text="hello again",
+    )
+    # A third packet with a different msgNo should NOT be deduplicated
+    packet3 = MessagePacket(
+        from_call="W1AW",
+        to_call="W2AW",
+        addresse="W2AW",
+        msgNo="002",
+        message_text="different message",
+    )
+
+    # Verify both packets produce the same hash
+    h1 = hash_packet(packet1.to, packet1.addresse, packet1.msgNo)
+    h2 = hash_packet(packet2.to, packet2.addresse, packet2.msgNo)
+    assert h1 == h2
+
+    # Mock the APRSBackend minimally to exercise _process_message
+    with patch.object(APRSBackend, "__init__", lambda self, config: None):
+        backend = APRSBackend(None)
+        backend._packet_cache = {}
+        backend._packet_cache_lock = asyncio.Lock()
+        backend._ack_message = AsyncMock()
+        backend.callback_message = MagicMock()
+
+        # First packet should NOT be deduped — callback_message called
+        await backend._process_message(packet1)
+        assert backend.callback_message.call_count == 1
+
+        # Second identical packet SHOULD be deduped — callback_message NOT called again
+        await backend._process_message(packet2)
+        assert backend.callback_message.call_count == 1
+
+        # Third distinct packet should NOT be deduped
+        await backend._process_message(packet3)
+        assert backend.callback_message.call_count == 2
