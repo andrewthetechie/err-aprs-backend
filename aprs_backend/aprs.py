@@ -262,7 +262,7 @@ class APRSBackend(ErrBot):
                     log.debug("Message %s needs to be re-sent %s", key, live_packet.json)
                     self.send_message(APRSMessage.from_message_packet(live_packet))
                 # release the loop for a bit
-                await asyncio.sleep(0.001)
+                await asyncio.sleep(0)  # cooperative yield
             # release the loop for a bit longer after we've gone through all keys
             await asyncio.sleep(5)
 
@@ -300,7 +300,7 @@ class APRSBackend(ErrBot):
 
                 self._send_queue.task_done()
             # release the loop for a bit
-            await asyncio.sleep(0.001)
+            await asyncio.sleep(0)  # cooperative yield
 
     async def receive_worker(self) -> bool:
         """_summary_"""
@@ -324,7 +324,7 @@ class APRSBackend(ErrBot):
                 try:
                     parsed_packet = parse(packet_str)
                     # release the loop for a tiny bit
-                    await asyncio.sleep(0.001)
+                    await asyncio.sleep(0)  # cooperative yield
                     if parsed_packet is not None:
                         # filtering should handle this, but belt and syspenders
                         if parsed_packet.to in self.listening_callsigns:
