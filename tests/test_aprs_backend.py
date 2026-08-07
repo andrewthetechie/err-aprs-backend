@@ -5,16 +5,17 @@ from aprs_backend.clients.beacon import BeaconConfig
 from aprs_backend.aprs import APRSBackend
 
 
-class _MinimalAPRSBackend:
-    """Minimal stub of APRSBackend that only provides _get_beacon_config's dependencies."""
+def _make_backend(bot_config: SimpleNamespace, callsign: str = "TEST-1") -> APRSBackend:
+    """Construct an uninitialized APRSBackend instance for testing _get_beacon_config.
 
-    def __init__(self, bot_config: SimpleNamespace, callsign: str = "TEST-1"):
-        self.bot_config = bot_config
-        self.callsign = callsign
-
-    # Bind the real _get_beacon_config and _get_from_config from APRSBackend
-    _get_beacon_config = APRSBackend._get_beacon_config
-    _get_from_config = APRSBackend._get_from_config
+    _get_beacon_config depends only on self.bot_config (via _get_from_config)
+    and self.callsign, so we bypass the heavy ErrBot __init__ by using
+    object.__new__ and setting only those two attributes.
+    """
+    backend = object.__new__(APRSBackend)
+    backend.bot_config = bot_config
+    backend.callsign = callsign
+    return backend
 
 
 @pytest.fixture
@@ -31,7 +32,7 @@ def valid_bot_config():
 
 @pytest.fixture
 def backend(valid_bot_config):
-    return _MinimalAPRSBackend(valid_bot_config, callsign="TEST-1")
+    return _make_backend(valid_bot_config, callsign="TEST-1")
 
 
 def test_beacon_enabled_returns_config(backend):
@@ -47,14 +48,14 @@ def test_beacon_enabled_returns_config(backend):
 def test_beacon_disabled_returns_none():
     """APRS_BEACON_ENABLE='false' returns None."""
     config = SimpleNamespace(APRS_BEACON_ENABLE="false")
-    backend = _MinimalAPRSBackend(config, callsign="TEST-1")
+    backend = _make_backend(config, callsign="TEST-1")
     assert backend._get_beacon_config() is None
 
 
 def test_beacon_unset_returns_none():
     """APRS_BEACON_ENABLE unset (defaults to 'false') returns None."""
     config = SimpleNamespace()
-    backend = _MinimalAPRSBackend(config, callsign="TEST-1")
+    backend = _make_backend(config, callsign="TEST-1")
     assert backend._get_beacon_config() is None
 
 
@@ -66,7 +67,7 @@ def test_beacon_enabled_missing_latitude_returns_none():
         APRS_BEACON_SYMBOL="l",
         APRS_BEACON_SYMBOL_TABLE="/",
     )
-    backend = _MinimalAPRSBackend(config, callsign="TEST-1")
+    backend = _make_backend(config, callsign="TEST-1")
     assert backend._get_beacon_config() is None
 
 
@@ -80,7 +81,7 @@ def test_beacon_mixed_case_enable_returns_config(value):
         APRS_BEACON_SYMBOL="l",
         APRS_BEACON_SYMBOL_TABLE="/",
     )
-    backend = _MinimalAPRSBackend(config, callsign="TEST-1")
+    backend = _make_backend(config, callsign="TEST-1")
     result = backend._get_beacon_config()
     assert result is not None
     assert isinstance(result, BeaconConfig)
@@ -96,5 +97,5 @@ def test_beacon_mixed_case_disable_returns_none(value):
         APRS_BEACON_SYMBOL="l",
         APRS_BEACON_SYMBOL_TABLE="/",
     )
-    backend = _MinimalAPRSBackend(config, callsign="TEST-1")
+    backend = _make_backend(config, callsign="TEST-1")
     assert backend._get_beacon_config() is None
