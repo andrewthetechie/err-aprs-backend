@@ -51,13 +51,21 @@ APRS_MESSAGE_MAX_RETRIES = os.environ.get("APRS_MESSAGE_MAX_RETRIES", "7")
 APRS_MESSAGE_RETRY_WAIT = os.environ.get("APRS_MESSAGE_RETRY_WAIT", "90")
 APRS_STRIP_NEWLINES = os.environ.get("APRS_STRIP_NEWLINES", "true")
 APRS_LANGUAGE_FILTER = os.environ.get("APRS_LANGUAGE_FILTER", "true")
-APRS_LANGUAGE_FILTER_EXTRA_WORDS = os.environ.get("APRS_LANGUAGE_FILTER_EXTRA_WORDS", "").strip(",").split(",")
+APRS_LANGUAGE_FILTER_EXTRA_WORDS = (
+    os.environ.get("APRS_LANGUAGE_FILTER_EXTRA_WORDS", "").strip(",").split(",")
+)
 APRS_CONNECT_TIMEOUT = os.environ.get("APRS_CONNECT_TIMEOUT", "30.0")
 
 APRS_REGISTRY_ENABLED = os.environ.get("APRS_REGISTRY_ENABLED", "false").lower()
-APRS_REGISTRY_URL = os.environ.get("APRS_REGISTRY_URL", "https://aprs.hemna.com/api/v1/registry")
-APRS_REGISTRY_FREQUENCY_SECONDS = os.environ.get("APRS_REGISTRY_FREQUENCY_SECONDS", "3600")
-APRS_REGISTRY_DESCRIPTION = os.environ.get("APRS_REGISTRY_DESCRIPTION", "err-aprs-backend powered bot")
+APRS_REGISTRY_URL = os.environ.get(
+    "APRS_REGISTRY_URL", "https://aprs.hemna.com/api/v1/registry"
+)
+APRS_REGISTRY_FREQUENCY_SECONDS = os.environ.get(
+    "APRS_REGISTRY_FREQUENCY_SECONDS", "3600"
+)
+APRS_REGISTRY_DESCRIPTION = os.environ.get(
+    "APRS_REGISTRY_DESCRIPTION", "err-aprs-backend powered bot"
+)
 APRS_REGISTRY_WEBSTIRE = os.environ.get("APRS_REGISTRY_WEBSTIRE", "")
 
 APRS_BEACON_ENABLE = os.environ.get("APRS_BEACON_ENABLE", "false")
@@ -75,9 +83,18 @@ SUPPRESS_CMD_NOT_FOUND = True
 
 # core plugins are not APRS optimized, only load ones that work
 # this causes some erros in the logs
-CORE_PLUGINS = ("ACLs", "CommandNotFoundFilter", "VersionCheck", "APRSHelp", "APRSWebserver", "APRSHealth")
+CORE_PLUGINS = (
+    "ACLs",
+    "CommandNotFoundFilter",
+    "VersionCheck",
+    "APRSHelp",
+    "APRSWebserver",
+    "APRSHealth",
+)
 
 for env_var, value in os.environ.items():
     if env_var.startswith("ERR_APRS_"):
         variable_name = env_var[len("ERR_APRS_") :].upper()
-        exec(f"{variable_name} = '{value}'")  # nosec b102 - exec used here intentionally
+        exec(
+            f"{variable_name} = '{value}'"
+        )  # nosec b102 - exec used here intentionally
