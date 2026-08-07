@@ -253,7 +253,7 @@ def get_packet_type(packet: dict) -> str:
 
 
 @lru_cache(maxsize=256)
-def hash_packet(to: str | None, addresse: str | None, msg_no: str | None) -> str:
+def hash_packet(to: str | None, address: str | None, msg_no: str | None) -> str:
     """Return a deterministic SHA-256 hash for packet deduplication.
 
     Any ``None`` argument is normalized to the empty string before hashing.
@@ -263,7 +263,7 @@ def hash_packet(to: str | None, addresse: str | None, msg_no: str | None) -> str
     ``"-None"`` hash.
     """
     safe_to = to if to is not None else ""
-    safe_addresse = addresse if addresse is not None else ""
+    safe_address = address if address is not None else ""
     safe_msg_no = msg_no if msg_no is not None else ""
-    stations = tuple(sorted((safe_to, safe_addresse)))
+    stations = tuple(sorted((safe_to, safe_address)))
     return sha256((",".join(stations) + f"-{safe_msg_no}").encode()).hexdigest()

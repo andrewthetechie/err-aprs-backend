@@ -14,7 +14,7 @@ class Packet:
     _type: str = field(default="Packet", hash=False)
     from_call: str | None = field(default=None)
     to_call: str | None = field(default=None)
-    addresse: str | None = field(default=None)
+    address: str | None = field(default=None)
     format: str | None = field(default=None)
     msgNo: str | None = field(default=None)  # noqa: N815
     packet_type: str | None = field(default=None)
@@ -35,7 +35,7 @@ class Packet:
 
     @property
     def to(self):
-        return self.addresse if self.addresse is not None else self.to_call
+        return self.address if self.address is not None else self.to_call
 
     @property
     def json(self):
@@ -55,7 +55,7 @@ class Packet:
     @property
     def key(self) -> str:
         """Build a key for finding this packet in a dict."""
-        return f"{self.from_call}:{self.addresse}:{self.msgNo}"
+        return f"{self.from_call}:{self.address}:{self.msgNo}"
 
     def update_timestamp(self) -> None:
         self.timestamp = init_timestamp()

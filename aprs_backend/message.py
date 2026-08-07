@@ -21,5 +21,5 @@ class APRSMessage(Message):
             },
         )
         this_msg.frm = APRSPerson(callsign=packet.from_call)
-        this_msg.to = APRSPerson(callsign=packet.addresse)
+        this_msg.to = APRSPerson(callsign=packet.address)
         return this_msg
