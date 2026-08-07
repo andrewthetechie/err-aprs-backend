@@ -8,6 +8,9 @@ from aprs_backend.packets import AckPacket, RejectPacket, MessagePacket
 
 log = logging.getLogger(__name__)
 
+_RE_ACK_REJ = re.compile(r"^(ack|rej)(..)}(..)$", re.IGNORECASE)
+_RE_NEW_MSG_ID = re.compile(r"^(.*){([a-zA-Z0-9]{2})}(\w*)$", re.IGNORECASE)
+
 
 def parse(packet_str: str) -> AckPacket | RejectPacket | MessagePacket | None:
     try:
@@ -48,7 +51,7 @@ def parse(packet_str: str) -> AckPacket | RejectPacket | MessagePacket | None:
     # Check if the message is in the new ack-rej format using regex
     # Update response and message_text if we have a new ack/rej message
     if raw_aprs_packet.get("format") == "message" and message_text is not None:
-        matches = re.search(r"^(ack|rej)(..)}(..)$", message_text, re.IGNORECASE)
+        matches = _RE_ACK_REJ.search(message_text)
         if matches:
             response = matches[1]
             message_text = None
@@ -209,7 +212,7 @@ def check_for_new_ackrej_format(message_text: str) -> tuple[str, str, bool]:
     # bb = message number
     # cc = message retry (may or may not be present)
     if message_text:
-        matches = re.search(r"^(.*){([a-zA-Z0-9]{2})}(\w*)$", message_text, re.IGNORECASE)
+        matches = _RE_NEW_MSG_ID.search(message_text)
         if matches:
             try:
                 msg = matches[1].rstrip()
