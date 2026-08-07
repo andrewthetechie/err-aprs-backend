@@ -13,6 +13,7 @@ from aprs_backend.exceptions import (
     ProcessorError,
     PacketParseError,
     APRSISConnnectError,
+    APRSISDeadConnectionError,
 )
 from aprs_backend.packets.parser import parse, hash_packet
 from expiringdict import ExpiringDict
@@ -71,6 +72,7 @@ class APRSBackend(ErrBot):
             self.listening_callsigns.append(self.callsign)
         aprs_config["connect_timeout"] = float(self._get_from_config("APRS_CONNECT_TIMEOUT", "30.0"))
         aprs_config["login_read_timeout"] = float(self._get_from_config("APRS_LOGIN_READ_TIMEOUT", "10.0"))
+        aprs_config["read_timeout"] = float(self._get_from_config("APRS_READ_TIMEOUT", "180.0"))
         self._client = APRSISClient(**aprs_config, logger=log)
         self._send_queue: asyncio.Queue[MessagePacket] = asyncio.Queue(
             maxsize=int(self._get_from_config("APRS_SEND_MAX_QUEUE", "2048"))
@@ -358,6 +360,10 @@ class APRSBackend(ErrBot):
         except KeyboardInterrupt:
             log.info("Interrupt received, shutting down..")
             return True
+        except APRSISDeadConnectionError as exc:
+            log.warning("Dead connection detected, disconnecting: %s", exc)
+            await self._client.disconnect()
+            return False
         except Exception as exc:
             log.error("Fatal unhandled error reading from APRS %s", exc)
             return False

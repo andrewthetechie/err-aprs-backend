@@ -3,7 +3,11 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from aprs_backend.clients import APRSISClient
-from aprs_backend.exceptions.client.aprsis import APRSISConnnectError, APRSISLoginError
+from aprs_backend.exceptions.client.aprsis import (
+    APRSISConnnectError,
+    APRSISLoginError,
+    APRSISDeadConnectionError,
+)
 
 
 @pytest.fixture
@@ -234,3 +238,94 @@ async def test_login_read_timeout_raises_on_slow_server(mock_logger):
 
     with pytest.raises(APRSISLoginError, match="Timed out waiting for APRS-IS login response after 0.1s"):
         await client._send_login()
+
+
+def test_default_read_timeout(aprsis_client):
+    """Default read timeout should be 180 seconds."""
+    assert aprsis_client._read_timeout == 180.0
+
+
+def test_custom_read_timeout(mock_logger):
+    """Custom read timeout should be respected."""
+    client = APRSISClient(
+        callsign="TEST-1",
+        password="1234",
+        read_timeout=120.0,
+        logger=mock_logger,
+    )
+    assert client._read_timeout == 120.0
+
+
+@pytest.mark.asyncio
+async def test_get_packet_read_timeout_raises_dead_connection(mock_logger):
+    """get_packet() should raise APRSISDeadConnectionError on read timeout."""
+    client = APRSISClient(
+        callsign="TEST-1",
+        password="1234",
+        read_timeout=0.1,
+        logger=mock_logger,
+    )
+    client.connected = True
+
+    mock_reader = AsyncMock()
+
+    # Simulate a stall: readline never returns
+    async def hanging_readline():
+        await asyncio.sleep(10)
+        return b"test"
+
+    mock_reader.readline = hanging_readline
+    client._reader = mock_reader
+
+    with pytest.raises(APRSISDeadConnectionError) as exc_info:
+        await client.get_packet()
+
+    assert "timeout" in str(exc_info.value).lower()
+
+
+@pytest.mark.asyncio
+async def test_get_packet_read_timeout_value_used_in_wait_for(mock_logger):
+    """asyncio.wait_for should be called with the configured read timeout."""
+    client = APRSISClient(
+        callsign="TEST-1",
+        password="1234",
+        read_timeout=45.0,
+        logger=mock_logger,
+    )
+    client.connected = True
+
+    wait_for_called_with = {}
+
+    async def mock_wait_for(coro, timeout=None):
+        wait_for_called_with["timeout"] = timeout
+        raise asyncio.TimeoutError("mock timeout")
+
+    mock_reader = AsyncMock()
+    client._reader = mock_reader
+
+    with patch.object(asyncio, "wait_for", mock_wait_for):
+        with pytest.raises(APRSISDeadConnectionError):
+            await client.get_packet()
+
+    assert wait_for_called_with["timeout"] == 45.0
+
+
+@pytest.mark.asyncio
+async def test_get_packet_successful_read(mock_logger):
+    """get_packet() should return decoded packet on successful read."""
+    client = APRSISClient(
+        callsign="TEST-1",
+        password="1234",
+        read_timeout=10.0,
+        logger=mock_logger,
+    )
+    client.connected = True
+
+    mock_reader = AsyncMock()
+    mock_reader.readline.return_value = b"TEST-1>USER-1:Hello\r\n"
+    client._reader = mock_reader
+
+    result = await client.get_packet()
+
+    assert result == "TEST-1>USER-1:Hello\r\n"
+    mock_reader.readline.assert_awaited_once()
