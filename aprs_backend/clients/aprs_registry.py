@@ -27,7 +27,12 @@ class RegistryAppConfig:
 
 class APRSRegistryClient(ClientBase):
     def __init__(
-        self, registry_url: str, app_config: RegistryAppConfig, log: Logger, frequency_seconds: int = 3600, timeout_seconds: float = 30.0
+        self,
+        registry_url: str,
+        app_config: RegistryAppConfig,
+        log: Logger,
+        frequency_seconds: int = 3600,
+        timeout_seconds: float = 30.0,
     ) -> None:
         self.registry_url = registry_url
         self.app_config = app_config
