@@ -1,6 +1,6 @@
 import asyncio
 import pytest
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from aprs_backend.clients import APRSISClient
 from aprs_backend.exceptions.client.aprsis import APRSISConnnectError
@@ -71,3 +71,80 @@ async def test_connect_timeout_used_in_wait_for(mock_logger):
             await client.connect()
 
     assert wait_for_called_with["timeout"] == 45.0
+
+
+@pytest.mark.asyncio
+async def test_disconnect_succeeds_when_writer_is_none(mock_logger):
+    """disconnect() should succeed when called on a freshly-constructed client where _writer is None."""
+    client = APRSISClient(
+        callsign="TEST-1",
+        password="1234",
+        logger=mock_logger,
+    )
+    assert client._writer is None
+    assert client._reader is None
+    await client.disconnect()
+    assert client._writer is None
+    assert client._reader is None
+    assert client.connected is False
+
+
+@pytest.mark.asyncio
+async def test_disconnect_is_idempotent(mock_logger):
+    """Calling disconnect() twice in a row should not raise."""
+    client = APRSISClient(
+        callsign="TEST-1",
+        password="1234",
+        logger=mock_logger,
+    )
+    await client.disconnect()
+    await client.disconnect()
+    assert client.connected is False
+
+
+@pytest.mark.asyncio
+async def test_disconnect_closes_writer_and_resets_state(mock_logger):
+    """When _writer is present, close() and wait_closed() should be called, and state reset."""
+    client = APRSISClient(
+        callsign="TEST-1",
+        password="1234",
+        logger=mock_logger,
+    )
+    mock_writer = MagicMock()
+    mock_writer.wait_closed = AsyncMock()
+    mock_reader = MagicMock()
+    client._writer = mock_writer
+    client._reader = mock_reader
+    client.connected = True
+
+    await client.disconnect()
+
+    mock_writer.close.assert_called_once()
+    mock_writer.wait_closed.assert_awaited_once()
+    assert client._writer is None
+    assert client._reader is None
+    assert client.connected is False
+
+
+@pytest.mark.asyncio
+async def test_disconnect_resets_state_when_wait_closed_raises(mock_logger):
+    """When wait_closed() raises, disconnect() should still reset state."""
+    client = APRSISClient(
+        callsign="TEST-1",
+        password="1234",
+        logger=mock_logger,
+    )
+    mock_writer = MagicMock()
+    mock_writer.wait_closed = AsyncMock(side_effect=ConnectionResetError("connection reset"))
+    mock_reader = MagicMock()
+    client._writer = mock_writer
+    client._reader = mock_reader
+    client.connected = True
+
+    await client.disconnect()
+
+    mock_writer.close.assert_called_once()
+    mock_writer.wait_closed.assert_awaited_once()
+    assert client._writer is None
+    assert client._reader is None
+    assert client.connected is False
