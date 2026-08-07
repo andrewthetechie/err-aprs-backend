@@ -34,11 +34,12 @@ class APRSRegistryClient(ClientBase):
         log: Logger,
         frequency_seconds: int = 3600,
         timeout_seconds: float = 30.0,
+        chunk_seconds: int = 10,
     ) -> None:
         self.registry_url = registry_url
         self.app_config = app_config
         self.timeout_seconds = timeout_seconds
-        super().__init__(log=log, frequency_seconds=frequency_seconds)
+        super().__init__(log=log, frequency_seconds=frequency_seconds, chunk_seconds=chunk_seconds)
 
     async def __process__(self) -> None:
         """Posts to the aprs registry url for each listening callsign for the bot
