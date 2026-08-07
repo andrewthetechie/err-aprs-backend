@@ -48,7 +48,8 @@ class APRSHealth(BotPlugin):
             from posix import getloadavg
 
             loads = getloadavg()
-        except Exception:
+        except Exception as exc:
+            self.log.debug("getloadavg not available: %s", exc)
             loads = None
 
         return {"loads": loads}
