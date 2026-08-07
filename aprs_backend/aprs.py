@@ -430,7 +430,7 @@ class APRSBackend(ErrBot):
         msg_packet = MessagePacket(
             from_call=msg.frm.callsign,
             to_call=msg.to.callsign,
-            addresse=msg.to.callsign,
+            address=msg.to.callsign,
             message_text=msg_text,
             msgNo=msgNo,
             last_send_attempt=last_send_attempt,
@@ -478,7 +478,7 @@ class APRSBackend(ErrBot):
             "Processing ACK/REJ packet for msgno %s from %s to %s",
             packet.msgNo,
             packet.from_call,
-            packet.addresse,
+            packet.address,
         )
         await self.__drop_message_from_waiting(f"{packet.from_call}-{packet.msgNo}")
 
@@ -500,7 +500,7 @@ class APRSBackend(ErrBot):
         log.debug(packet.raw_dict)
         # send an ack to this message
         await self._ack_message(packet)
-        this_packet_hash = hash_packet(packet.to, packet.addresse, packet.msgNo)
+        this_packet_hash = hash_packet(packet.to, packet.address, packet.msgNo)
         async with self._packet_cache_lock:
             if self._packet_cache.get(this_packet_hash, None) is not None:
                 log.info("Duplicate packet %s. Skipping processing", packet.json)
@@ -515,7 +515,7 @@ class APRSBackend(ErrBot):
         this_ack = AckPacket(
             from_call=packet.to,
             to_call=packet.from_call,
-            addresse=packet.from_call,
+            address=packet.from_call,
             msgNo=packet.msgNo,
         )
         await this_ack.prepare(self._message_counter)

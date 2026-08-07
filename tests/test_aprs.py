@@ -70,7 +70,7 @@ def _make_packet(msgno: int = 1, last_send_attempt: int = 0, last_send_time: dat
     pkt = MessagePacket(
         from_call="TEST-1",
         to_call="REMOTE-1",
-        addresse="REMOTE-1",
+        address="REMOTE-1",
         message_text="hello",
         msgNo=str(msgno),
         last_send_attempt=last_send_attempt,
@@ -408,7 +408,7 @@ async def test_retry_worker_skips_ack_entry_removed_mid_cycle(backend):
             pass
 
     # Entry 2 was removed mid-cycle, so it must NOT have been resent.
-    sent_keys = [p.addresse + "-" + p.msgNo for p in sent_packets if p is not None]
+    sent_keys = [p.address + "-" + p.msgNo for p in sent_packets if p is not None]
     assert "REMOTE-1-2" not in sent_keys, "send_message must NOT be called for an entry ACKed mid-cycle"
 
     # No error-level log should be emitted for the expected concurrent removal
