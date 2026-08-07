@@ -37,11 +37,7 @@ from types import MethodType
 log = logging.getLogger(__name__)
 
 for handler in log.handlers:
-    handler.setFormatter(
-        logging.Formatter(
-            "%(filename)s: %(levelname)s: %(funcName)s(): %(lineno)d:\t%(message)s"
-        )
-    )
+    handler.setFormatter(logging.Formatter("%(filename)s: %(levelname)s: %(funcName)s(): %(lineno)d:\t%(message)s"))
 
 
 class APRSBackend(ErrBot):
@@ -67,57 +63,35 @@ class APRSBackend(ErrBot):
 
         self.listening_callsigns = [aprs_config["callsign"]]
 
-        self.callsign = self._get_from_config(
-            "APRS_BOT_CALLSIGN", aprs_config["callsign"]
-        )
+        self.callsign = self._get_from_config("APRS_BOT_CALLSIGN", aprs_config["callsign"])
         self.bot_identifier = APRSPerson(self.callsign)
         if self.callsign != aprs_config["callsign"]:
             # bot is using a different callsign from the signin, add it to the filter
             aprs_config["aprs_filter"] = f"g/{aprs_config['callsign']}/{self.callsign}"
             self.listening_callsigns.append(self.callsign)
-        aprs_config["connect_timeout"] = float(
-            self._get_from_config("APRS_CONNECT_TIMEOUT", "30.0")
-        )
+        aprs_config["connect_timeout"] = float(self._get_from_config("APRS_CONNECT_TIMEOUT", "30.0"))
         self._client = APRSISClient(**aprs_config, logger=log)
         self._send_queue: asyncio.Queue[MessagePacket] = asyncio.Queue(
             maxsize=int(self._get_from_config("APRS_SEND_MAX_QUEUE", "2048"))
         )
 
-        self._message_counter = MessageCounter(
-            initial_value=randint(1, 20)
-        )  # nosec not used cryptographically
-        self._max_dropped_packets = int(
-            self._get_from_config("APRS_MAX_DROPPED_PACKETS", "25")
-        )
-        self._max_cached_packets = int(
-            self._get_from_config("APRS_MAX_CACHED_PACKETS", "2048")
-        )
-        self._message_max_retry = int(
-            self._get_from_config("APRS_MESSAGE_MAX_RETRIES", "7")
-        )
-        self._message_retry_wait = int(
-            self._get_from_config("APRS_MESSAGE_RETRY_WAIT", "90")
-        )
+        self._message_counter = MessageCounter(initial_value=randint(1, 20))  # nosec not used cryptographically
+        self._max_dropped_packets = int(self._get_from_config("APRS_MAX_DROPPED_PACKETS", "25"))
+        self._max_cached_packets = int(self._get_from_config("APRS_MAX_CACHED_PACKETS", "2048"))
+        self._message_max_retry = int(self._get_from_config("APRS_MESSAGE_MAX_RETRIES", "7"))
+        self._message_retry_wait = int(self._get_from_config("APRS_MESSAGE_RETRY_WAIT", "90"))
 
         # strip newlines out of plugin responses before sending to aprs, probably best to leave it true, nothing in aprs will handle
         # a stray newline
-        self._strip_newlines = (
-            str(self._get_from_config("APRS_STRIP_NEWLINES", "true")).lower() == "true"
-        )
+        self._strip_newlines = str(self._get_from_config("APRS_STRIP_NEWLINES", "true")).lower() == "true"
 
         # try to strip out "foul" language the FCC would not like. It is possible/probable an errbot bot response could
         # go out over the airwaves. This is configurable, but probably should remain on.
-        self._language_filter = (
-            str(self._get_from_config("APRS_LANGUAGE_FILTER", "true")).lower() == "true"
-        )
+        self._language_filter = str(self._get_from_config("APRS_LANGUAGE_FILTER", "true")).lower() == "true"
         if self._language_filter:
-            profanity.load_censor_words(
-                self._get_from_config("APRS_LANGUAGE_FILTER_EXTRA_WORDS", [])
-            )
+            profanity.load_censor_words(self._get_from_config("APRS_LANGUAGE_FILTER_EXTRA_WORDS", []))
 
-        self._max_age_cached_packets_seconds = self._resolve_max_age_seconds(
-            self.bot_config
-        )
+        self._max_age_cached_packets_seconds = self._resolve_max_age_seconds(self.bot_config)
         self._packet_cache = ExpiringDict(
             max_len=self._max_cached_packets,
             max_age_seconds=self._max_age_cached_packets_seconds,
@@ -129,14 +103,10 @@ class APRSBackend(ErrBot):
         )
         self._waiting_ack_lock = asyncio.Lock()
 
-        self.registry_enabled = (
-            self._get_from_config("APRS_REGISTRY_ENABLED", "false").lower() == "true"
-        )
+        self.registry_enabled = self._get_from_config("APRS_REGISTRY_ENABLED", "false").lower() == "true"
         if self.registry_enabled:
             self.registry_app_config = RegistryAppConfig(
-                description=self._get_from_config(
-                    "APRS_REGISTRY_DESCRIPTION", "err-aprs-backend powered bot"
-                ),
+                description=self._get_from_config("APRS_REGISTRY_DESCRIPTION", "err-aprs-backend powered bot"),
                 website=self._get_from_config("APRS_REGISTRY_WEBSITE", ""),
                 listening_callsigns=self.listening_callsigns,
                 software=self._get_from_config(
@@ -144,20 +114,12 @@ class APRSBackend(ErrBot):
                     f"err-aprs-backend {ERR_APRS_VERSION} errbot {ERR_VERSION}",
                 ),
             )
-            if (
-                registry_software := self._get_from_config(
-                    "APRS_REGISTRY_SOFTWARE", None
-                )
-            ) is not None:
+            if (registry_software := self._get_from_config("APRS_REGISTRY_SOFTWARE", None)) is not None:
                 self.registry_app_config.software = registry_software
             self.registry_client = APRSRegistryClient(
-                registry_url=self._get_from_config(
-                    "APRS_REGISTRY_URL", "https://aprs.hemna.com/api/v1/registry"
-                ),
+                registry_url=self._get_from_config("APRS_REGISTRY_URL", "https://aprs.hemna.com/api/v1/registry"),
                 log=log,
-                frequency_seconds=int(
-                    self._get_from_config("APRS_REGISTRY_FREQUENCY_SECONDS", "3600")
-                ),
+                frequency_seconds=int(self._get_from_config("APRS_REGISTRY_FREQUENCY_SECONDS", "3600")),
                 app_config=self.registry_app_config,
             )
         else:
@@ -169,9 +131,7 @@ class APRSBackend(ErrBot):
                 beacon_config=self.beacon_config,
                 send_queue=self._send_queue,
                 log=log,
-                frequency_seconds=int(
-                    self._get_from_config("APRS_BEACON_INTERVAL_SECONDS", "1200")
-                ),
+                frequency_seconds=int(self._get_from_config("APRS_BEACON_INTERVAL_SECONDS", "1200")),
             )
         else:
             self.beacon_client = None
@@ -186,12 +146,8 @@ class APRSBackend(ErrBot):
         if plugin_manager is not None:
             log.debug("Patching plugin manager with custom _load_plugins_generic")
             funcType = MethodType
-            plugin_manager._load_plugins_generic = funcType(
-                _load_plugins_generic, plugin_manager
-            )
-            plugin_manager.activate_non_started_plugins = funcType(
-                activate_non_started_plugins, plugin_manager
-            )
+            plugin_manager._load_plugins_generic = funcType(_load_plugins_generic, plugin_manager)
+            plugin_manager.activate_non_started_plugins = funcType(activate_non_started_plugins, plugin_manager)
         self.plugin_manager = plugin_manager
 
     @staticmethod
@@ -202,8 +158,7 @@ class APRSBackend(ErrBot):
             misspelled = getattr(bot_config, "APRS_MAX_AGE_CACHED_PACETS_SECONDS", None)
             if misspelled is not None:
                 log.warning(
-                    "APRS_MAX_AGE_CACHED_PACETS_SECONDS is deprecated; "
-                    "use APRS_MAX_AGE_CACHED_PACKETS_SECONDS instead"
+                    "APRS_MAX_AGE_CACHED_PACETS_SECONDS is deprecated; use APRS_MAX_AGE_CACHED_PACKETS_SECONDS instead"
                 )
                 max_age = misspelled
             else:
@@ -218,19 +173,13 @@ class APRSBackend(ErrBot):
             return None
         beacon_config = {}
         beacon_config["latitude"] = self._get_from_config("APRS_BEACON_LATITUDE", None)
-        beacon_config["longitude"] = self._get_from_config(
-            "APRS_BEACON_LONGITUDE", None
-        )
+        beacon_config["longitude"] = self._get_from_config("APRS_BEACON_LONGITUDE", None)
         beacon_config["symbol"] = self._get_from_config("APRS_BEACON_SYMBOL", None)
-        beacon_config["symbol_table"] = self._get_from_config(
-            "APRS_BEACON_SYMBOL_TABLE", None
-        )
+        beacon_config["symbol_table"] = self._get_from_config("APRS_BEACON_SYMBOL_TABLE", None)
         log.debug("Beacon Config %s", beacon_config)
         for key, value in beacon_config.items():
             if value is None:
-                log.error(
-                    f"Beacon enabled but APRS_BEACON_{key.upper()} not set. Disabling Beacon."
-                )
+                log.error(f"Beacon enabled but APRS_BEACON_{key.upper()} not set. Disabling Beacon.")
                 return None
 
         for key in ["latitude", "longitude"]:
@@ -241,16 +190,12 @@ class APRSBackend(ErrBot):
                 return None
 
         for key in ["altitude", "comment"]:
-            if (
-                value := self._get_from_config(f"APRS_BEACON_{key.upper()}", None)
-            ) is not None:
+            if (value := self._get_from_config(f"APRS_BEACON_{key.upper()}", None)) is not None:
                 beacon_config[key] = value
 
         return BeaconConfig(**beacon_config, from_call=self.callsign)
 
-    def build_reply(
-        self, msg: Message, text: str, private: bool = False, threaded: bool = False
-    ) -> Message:
+    def build_reply(self, msg: Message, text: str, private: bool = False, threaded: bool = False) -> Message:
         log.debug(msg)
         reply = Message(
             body=text,
@@ -304,20 +249,14 @@ class APRSBackend(ErrBot):
 
                 # check max retries first, its cheaper than a timedelta
                 if this_packet.last_send_attempt > self._message_max_retry:
-                    log.debug(
-                        "Packet %s over max retries, dropping %s", key, this_packet.json
-                    )
+                    log.debug("Packet %s over max retries, dropping %s", key, this_packet.json)
                     await self.__drop_message_from_waiting(key)
                     continue
 
                 # if this packet has not been sent in self._message_retry_wait seconds, resend it
                 # because it hasn't been ack'd yet
-                if (
-                    datetime.now() - this_packet.last_send_time
-                ).total_seconds() > self._message_retry_wait:
-                    log.debug(
-                        "Message %s needs to be re-sent %s", key, this_packet.json
-                    )
+                if (datetime.now() - this_packet.last_send_time).total_seconds() > self._message_retry_wait:
+                    log.debug("Message %s needs to be re-sent %s", key, this_packet.json)
                     self.send_message(APRSMessage.from_message_packet(this_packet))
                 # release the loop for a bit
                 await asyncio.sleep(0.001)
@@ -377,9 +316,7 @@ class APRSBackend(ErrBot):
                 # or connetion replies info.
                 # They all startwith "# "
                 if packet_str.startswith("# "):
-                    log.debug(
-                        "Status message from aprs server: %s", packet_str.rstrip("\r\n")
-                    )
+                    log.debug("Status message from aprs server: %s", packet_str.rstrip("\r\n"))
                     continue
                 try:
                     parsed_packet = parse(packet_str)
@@ -431,10 +368,7 @@ class APRSBackend(ErrBot):
         """
         log.debug(
             "Bot plugins: %s",
-            [
-                plugin.__class__.__name__
-                for plugin in self.plugin_manager.get_all_active_plugins()
-            ],
+            [plugin.__class__.__name__ for plugin in self.plugin_manager.get_all_active_plugins()],
         )
         receive_task = asyncio.create_task(self.receive_worker())
 
@@ -520,9 +454,7 @@ class APRSBackend(ErrBot):
         """
         return [APRSRoom("aprs")]
 
-    async def process_packet(
-        self, packet: AckPacket | RejectPacket | MessagePacket
-    ) -> None:
+    async def process_packet(self, packet: AckPacket | RejectPacket | MessagePacket) -> None:
         log.debug("Processing packet %s", packet.json)
         if isinstance(packet, MessagePacket):
             await self._process_message(packet)
@@ -549,9 +481,7 @@ class APRSBackend(ErrBot):
         async with self._waiting_ack_lock:
             packet = self._waiting_ack.pop(message_hash)
         if packet is None:
-            log.error(
-                "Tried to drop hash %s and it didn't exist in waiting ack", message_hash
-            )
+            log.error("Tried to drop hash %s and it didn't exist in waiting ack", message_hash)
         else:
             log.debug("Dropped Packet from waiting_ack: %s", packet)
 
