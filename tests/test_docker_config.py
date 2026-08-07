@@ -3,6 +3,7 @@
 This guards against the Docker config surface drifting out of sync with the
 keys consumed by aprs_backend/aprs.py.
 """
+
 import importlib
 import sys
 import os
@@ -27,12 +28,8 @@ def test_docker_config_exposes_aprs_login_read_timeout():
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
 
-        assert hasattr(mod, "APRS_LOGIN_READ_TIMEOUT"), (
-            "docker/config.py must expose APRS_LOGIN_READ_TIMEOUT"
-        )
-        assert mod.APRS_LOGIN_READ_TIMEOUT == "10.0", (
-            "APRS_LOGIN_READ_TIMEOUT default must be '10.0' to match aprs.py"
-        )
+        assert hasattr(mod, "APRS_LOGIN_READ_TIMEOUT"), "docker/config.py must expose APRS_LOGIN_READ_TIMEOUT"
+        assert mod.APRS_LOGIN_READ_TIMEOUT == "10.0", "APRS_LOGIN_READ_TIMEOUT default must be '10.0' to match aprs.py"
     finally:
         for var, old_val in env_backup.items():
             if old_val is None:
@@ -57,9 +54,7 @@ def test_docker_config_aprs_login_read_timeout_honors_env():
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
 
-        assert mod.APRS_LOGIN_READ_TIMEOUT == "20.0", (
-            "docker/config.py must honor the APRS_LOGIN_READ_TIMEOUT env var"
-        )
+        assert mod.APRS_LOGIN_READ_TIMEOUT == "20.0", "docker/config.py must honor the APRS_LOGIN_READ_TIMEOUT env var"
     finally:
         for var, old_val in env_backup.items():
             if old_val is None:
