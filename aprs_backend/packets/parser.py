@@ -80,21 +80,24 @@ def parse(packet_str: str) -> AckPacket | RejectPacket | MessagePacket | None:
     raw_aprs_packet["is_new_ackrej"] = is_new_ackrej
     raw_aprs_packet["packet_type"] = get_packet_type(raw_aprs_packet)
 
+    # Normalize aprslib's legacy "addresse" key to "address" once, before
+    # dispatching to per-type branches.  Only clobber if "address" is not
+    # already present, preserving existing fallback semantics.
+    if "addresse" in raw_aprs_packet and "address" not in raw_aprs_packet:
+        raw_aprs_packet["address"] = raw_aprs_packet.pop("addresse")
+
     match raw_aprs_packet["packet_type"]:
         case "MESSAGE":
             packet = MessagePacket.from_dict(raw_aprs_packet)
             packet.from_call = from_callsign
-            packet.address = raw_aprs_packet.get("addresse", packet.address)
 
         case "ACK":
             packet = AckPacket.from_dict(raw_aprs_packet)
             packet.from_call = from_callsign
-            packet.address = raw_aprs_packet.get("addresse", packet.address)
 
         case "REJECT":
             packet = RejectPacket.from_dict(raw_aprs_packet)
             packet.from_call = from_callsign
-            packet.address = raw_aprs_packet.get("addresse", packet.address)
 
         case _:
             log.info("Packet is not a message, ack, or reject. Not parsing it")
