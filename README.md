@@ -5,9 +5,9 @@ An APRS Backend for Errbot
 ## Requirements
 
 - Errbot >= 6.2.0
-- Python >= 3.11
+- Python >= 3.13
 
-Will probably work on Python 3.10 and higher, but the backend is only currently tested against 3.11.
+Will probably work on newer Python versions, but the backend is only currently tested against 3.13.
 
 ## Disclaimers ahead of time
 
@@ -36,8 +36,8 @@ Beta.
 
 ## Quickstart
 
-1. Setup a virtualenv using python 3.11
-1. Install errbot
+1. Install [uv](https://docs.astral.sh/uv/)
+1. Install errbot (via pip or your package manager)
 1. Install errbot-aprs-backend from pypi or from Github
 1. Configure your bot using the suggested config
 1. Pre-install your plugins

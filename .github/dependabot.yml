@@ -7,12 +7,6 @@ updates:
     commit-message:
       prefix: ci
   - package-ecosystem: pip
-    directory: "/.github/workflows"
-    schedule:
-      interval: daily
-    commit-message:
-      prefix: ci
-  - package-ecosystem: pip
     directory: "/"
     schedule:
       interval: daily

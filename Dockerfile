@@ -1,14 +1,13 @@
 ARG ERRBOT_VERSION=6.2.0
-from python:3.11-slim as builder
+FROM python:3.13-slim as builder
 
 
-COPY .github/workflows/constraints.txt /constraints.txt
-RUN pip install --upgrade --constraint /constraints.txt pip poetry
-COPY ./ /app
+COPY . /app
 WORKDIR /app
-RUN rm -rf dist && poetry build
+RUN pip install --no-cache-dir uv
+RUN rm -rf dist && uv build
 
-from python:3.11-slim
+FROM python:3.13-slim
 ARG ERRBOT_VERSION=6.2.0
 
 COPY --from=builder /app/dist/*.whl /

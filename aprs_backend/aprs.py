@@ -31,9 +31,7 @@ from types import MethodType
 log = logging.getLogger(__name__)
 
 for handler in log.handlers:
-    handler.setFormatter(
-        logging.Formatter("%(filename)s: " "%(levelname)s: " "%(funcName)s(): " "%(lineno)d:\t" "%(message)s")
-    )
+    handler.setFormatter(logging.Formatter("%(filename)s: %(levelname)s: %(funcName)s(): %(lineno)d:\t%(message)s"))
 
 
 class APRSBackend(ErrBot):
@@ -315,7 +313,7 @@ class APRSBackend(ErrBot):
                         self._dropped_packets,
                     )
                 except ProcessorError as exc:
-                    log.err(
+                    log.error(
                         "Dropping packet %s due to Processor error: %s. Total Dropped Packets: %s",
                         packet_str,
                         exc,
