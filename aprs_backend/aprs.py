@@ -455,7 +455,7 @@ class APRSBackend(ErrBot):
         log.debug(packet.raw_dict)
         # send an ack to this message
         await self._ack_message(packet)
-        this_packet_hash = hash_packet(packet)
+        this_packet_hash = hash_packet(packet.to, packet.addresse, packet.msgNo)
         async with self._packet_cache_lock:
             if self._packet_cache.get(this_packet_hash, None) is not None:
                 log.info("Duplicate packet %s. Skipping processing", packet.json)

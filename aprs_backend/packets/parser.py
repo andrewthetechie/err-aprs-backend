@@ -248,9 +248,7 @@ def get_packet_type(packet: dict) -> str:
     return packet_type
 
 
-@lru_cache(maxsize=128)
-def hash_packet(packet: AckPacket | MessagePacket | RejectPacket) -> str:
-    involved_stations = [packet.to, packet.addresse]
-    # alphabetize them for norming
-    involved_stations.sort()
-    return sha256((",".join(involved_stations) + f"-{packet.msgNo}").encode()).hexdigest()
+@lru_cache(maxsize=256)
+def hash_packet(to: str, addresse: str, msg_no: str) -> str:
+    stations = tuple(sorted((to, addresse)))
+    return sha256((",".join(stations) + f"-{msg_no}").encode()).hexdigest()
