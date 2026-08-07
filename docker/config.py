@@ -41,6 +41,7 @@ APRS_STRIP_NEWLINES = os.environ.get("APRS_STRIP_NEWLINES", "true")
 APRS_LANGUAGE_FILTER = os.environ.get("APRS_LANGUAGE_FILTER", "true")
 APRS_LANGUAGE_FILTER_EXTRA_WORDS = os.environ.get("APRS_LANGUAGE_FILTER_EXTRA_WORDS", "").strip(",").split(",")
 APRS_CONNECT_TIMEOUT = os.environ.get("APRS_CONNECT_TIMEOUT", "30.0")
+APRS_LOGIN_READ_TIMEOUT = os.environ.get("APRS_LOGIN_READ_TIMEOUT", "10.0")
 
 APRS_REGISTRY_ENABLED = os.environ.get("APRS_REGISTRY_ENABLED", "false").lower()
 APRS_REGISTRY_URL = os.environ.get("APRS_REGISTRY_URL", "https://aprs.hemna.com/api/v1/registry")
