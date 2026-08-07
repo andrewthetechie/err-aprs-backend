@@ -186,7 +186,7 @@ async def test_login_read_timeout_used_in_wait_for(mock_logger):
         wait_for_calls.append(timeout)
         if call_count[0] == 1:
             return b"APRS-IS Linux 3.0.19+gcc12.2.0"
-        raise asyncio.TimeoutError("mock timeout")
+        raise TimeoutError("mock timeout")
 
     mock_reader = MagicMock()
     mock_reader.readline = AsyncMock()
