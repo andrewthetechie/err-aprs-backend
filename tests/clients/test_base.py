@@ -51,6 +51,31 @@ async def test_clientbase_cancellation_during_sleep(mock_logger):
     await task  # task returns cleanly after catching CancelledError
     cancel_elapsed = asyncio.get_event_loop().time() - cancel_start
     assert cancel_elapsed < 11  # cancellation resolved well within 1 chunk
+    # Verify consistent log message from centralized handler
+    mock_logger.info.assert_called_with(
+        "%s cancelled, stopping", "ClientBaseForTest"
+    )
+
+
+@pytest.mark.asyncio
+async def test_clientbase_cancellation_during_process(mock_logger):
+    """Cancellation during __process__ returns cleanly with the same log message."""
+
+    class SlowProcessClient(ClientBaseForTest):
+        async def __process__(self):
+            self.process_call_count += 1
+            await asyncio.sleep(60)  # long enough to be cancelled
+
+    client = SlowProcessClient(log=mock_logger, frequency_seconds=3600)
+    task = asyncio.create_task(client())
+    await asyncio.sleep(0.1)  # let __process__ start
+    task.cancel()
+    await task  # task returns cleanly after catching CancelledError
+    assert client.process_called
+    # Verify consistent log message from centralized handler
+    mock_logger.info.assert_called_with(
+        "%s cancelled, stopping", "SlowProcessClient"
+    )
 
 
 @pytest.mark.asyncio

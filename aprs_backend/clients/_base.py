@@ -11,6 +11,17 @@ class ClientBase:
     async def __process__(self):
         raise NotImplementedError("Not implemented")  # pragma: no cover
 
+    def _handle_cancelled(self) -> None:
+        """Centralized cancellation handler for ClientBase.
+
+        Swallows CancelledError via return (does not re-raise).
+        This is intentional: the production caller (aprs_backend/aprs.py)
+        cancels registry_client/beacon_client tasks and does not await them
+        afterward; they are not part of any asyncio.gather/TaskGroup/asyncio.timeout,
+        so no parent coroutine relies on CancelledError propagation here.
+        """
+        self.log.info("%s cancelled, stopping", self.__class__.__name__)
+
     async def __call__(self) -> None:
         """Posts to the aprs registry url for each listening callsign for the bot
         Run as an asyncio task
@@ -27,9 +38,9 @@ class ClientBase:
                     try:
                         await asyncio.sleep(sleep_time)
                     except asyncio.CancelledError:
-                        self.log.info("%s cancelled, stopping", self.__class__.__name__)
+                        self._handle_cancelled()
                         return
                     remaining -= sleep_time
         except asyncio.CancelledError:
-            self.log.info("%scancelled, stopping", self.__class__.__name__)
+            self._handle_cancelled()
             return
