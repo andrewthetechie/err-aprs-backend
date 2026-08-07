@@ -376,7 +376,7 @@ async def test_retry_worker_skips_ack_entry_removed_mid_cycle(backend):
 
     backend._APRSBackend__drop_message_from_waiting = tracked_drop
 
-    # Patch the per-entry sleep(0.001) so we can drop entry 2 between
+    # Patch the per-entry sleep(0) so we can drop entry 2 between
     # the processing of entry 1 and entry 2 in the snapshot iteration.
     # Use a counter to know which iteration we're on.
     sleep_call_count = 0
@@ -384,7 +384,7 @@ async def test_retry_worker_skips_ack_entry_removed_mid_cycle(backend):
 
     async def patched_sleep_with_drop(delay):
         nonlocal sleep_call_count
-        if delay == 0.001:
+        if delay == 0:
             sleep_call_count += 1
             # After the first entry has been processed (first sleep),
             # drop the second entry from _waiting_ack to simulate
