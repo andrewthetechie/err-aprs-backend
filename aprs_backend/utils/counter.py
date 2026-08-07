@@ -16,18 +16,19 @@ class MessageCounter:
                 self._value = 1
 
     async def get_value(self, increment: bool = True) -> int:
-        if increment:
-            await self.increment()
         async with self._lock:
+            if increment:
+                self._value += 1
+                if self._value > self._max:
+                    self._value = 1
             this_val = self._value
         return this_val
 
     def get_value_sync(self, increment: bool = True) -> int:
-        if increment:
-            with self._sync_lock:
-                self._value += 1
-            if self._value > self._max:
-                self._value = 1
         with self._sync_lock:
+            if increment:
+                self._value += 1
+                if self._value > self._max:
+                    self._value = 1
             this_val = self._value
         return this_val
