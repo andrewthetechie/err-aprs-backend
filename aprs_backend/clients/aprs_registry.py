@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 import httpx
 from functools import cached_property
@@ -44,24 +45,42 @@ class APRSRegistryClient(ClientBase):
         Run as an asyncio task in __call__
         """
         async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout_seconds)) as client:
-            for post_json in self.app_config.post_jsons:
-                self.log.debug("Posting %s to %s", post_json, self.registry_url)
-                try:
-                    response = await client.post(self.registry_url, json=post_json)
-                    self.log.debug(response)
-                    response.raise_for_status()
-                except httpx.RequestError as exc:
+            results = await asyncio.gather(
+                *(
+                    self._post_and_log(client, post_json)
+                    for post_json in self.app_config.post_jsons
+                ),
+                return_exceptions=True,
+            )
+            for post_json, result in zip(self.app_config.post_jsons, results):
+                if isinstance(result, Exception):
                     self.log.error(
-                        "Request Error while posting %s to %s. Error: %s",
+                        "Registry POST failed for %s: %s",
                         post_json,
-                        self.registry_url,
-                        exc,
+                        result,
                     )
-                except httpx.HTTPStatusError as exc:
-                    self.log.error(
-                        "Error while posting %s to %s. Error: %s, response: %s",
-                        post_json,
-                        self.registry_url,
-                        exc,
-                        response,
-                    )
+
+    async def _post_and_log(self, client: httpx.AsyncClient, post_json: dict) -> None:
+        """Send a single POST to the registry and log the result."""
+        self.log.debug("Posting %s to %s", post_json, self.registry_url)
+        try:
+            response = await client.post(self.registry_url, json=post_json)
+            self.log.debug(response)
+            response.raise_for_status()
+        except httpx.RequestError as exc:
+            self.log.error(
+                "Request Error while posting %s to %s. Error: %s",
+                post_json,
+                self.registry_url,
+                exc,
+            )
+            raise
+        except httpx.HTTPStatusError as exc:
+            self.log.error(
+                "Error while posting %s to %s. Error: %s, response: %s",
+                post_json,
+                self.registry_url,
+                exc,
+                response,
+            )
+            raise
