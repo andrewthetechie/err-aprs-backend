@@ -13,3 +13,11 @@ nox
 tests
 .github
 CHANGELOG.md
+# README.md is required at build time: pyproject.toml's "readme" field points to it,
+# and Dockerfile's "uv build" step needs it in the context to populate wheel metadata.
+**/*.md
+!README.md
+.pre-commit-config.yaml
+noxfile.py
+.gitignore
+.prettierignore
