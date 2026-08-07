@@ -122,9 +122,9 @@ class APRSISClient:
             self._writer.close()
             try:
                 await self._writer.wait_closed()
-            except Exception:  # nosec B110
+            except (OSError, ConnectionError) as exc:
                 # writer may already be closed/invalid; still reset state below
-                pass
+                self._log.debug("wait_closed() raised: %s", exc)
         self._writer = None
         self._reader = None
         self.connected = False
