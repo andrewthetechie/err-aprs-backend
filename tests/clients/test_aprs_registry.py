@@ -54,7 +54,7 @@ async def test_APRSRegistryClient_errors(httpx_mock, mock_logger, registry_app_c
         app_config=registry_app_config,
     )
     await this_APRSRegistryClient.__process__()
-    assert mock_logger.error.called
+    assert mock_logger.error.call_count == 1
 
 
 @pytest.mark.asyncio
