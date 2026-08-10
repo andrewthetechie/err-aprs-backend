@@ -27,7 +27,7 @@ help = "aprs_backend:APRSHelp"
 
 [dependency-groups]
 dev = [
-    "pytest>=8.1.1,<9",
+    "pytest>=8.1.1,<10",
     "coverage[toml]>=6.5,<8.0",
     "pre-commit>=2.12.1",
     "pep8-naming>=0.13.2,<0.16.0",
