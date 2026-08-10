@@ -16,7 +16,7 @@ dependencies = [
     "expiringdict>=1.2.2,<2",
     "dataclasses-json>=0.6.4,<0.7",
     "better-profanity>=0.7.0,<0.8",
-    "httpx>=0.27.0,<0.28",
+    "httpx>=0.27.0,<0.29",
 ]
 
 [project.entry-points."errbot.backend_plugins"]
